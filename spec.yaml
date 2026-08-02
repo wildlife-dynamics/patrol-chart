@@ -1,11 +1,647 @@
 id: patrol_trend_plot
 
 requirements:
-  - name: "ecoscope-platform"
-    version: ">=2.15.0, <2.16.0"
-    channel: "https://repo.prefix.dev/ecoscope-workflows/"
-  - name: "ecoscope-workflows-ext-custom"
-    version: "0.1.0rc14"
-    channel: "https://repo.prefix.dev/ecoscope-workflows-custom/"
+  # DEV ONLY: local editable ecoscope on branch add-concat-dataframes-task,
+  # which carries set_encounter_rate_metrics (per-metric aggregate_column),
+  # concat_dataframes, the draw_time_series_bar_chart metric mode (+ the
+  # breakdown increment) and the chart-mode config tasks. Before publish,
+  # revert to the first released ecoscope-platform that ships them. Run
+  # dev/postcompile-editable.sh after every compile, then test with --frozen.
+  - name: python
+    version: "3.12.*"
+  - name: ecoscope
+    path: /Users/yunwu/MEP/wt-tasks/ecoscope
+    editable: true
+    extras: ["platform", "mapping", "analysis"]
+  - name: lonboard
+    version: "==0.0.8"
+    channel: https://repo.prefix.dev/ecoscope-workflows/
+  - name: numpy
+    version: ">=2,<2.1"
+    channel: conda-forge
+  - name: pyarrow
+    version: ">=20,<24"
+    channel: conda-forge
+  - name: rasterio
+    version: ">=1.3,<1.5"
+    channel: conda-forge
+  - name: pydeck
+    version: 0.9.2
+    channel: conda-forge
 
-workflow: []
+rjsf-overrides:
+  properties:
+    # --- Patrol and Event Types ---
+    "Patrol and Event Types.properties.er_params.title": ""
+    "Patrol and Event Types.properties.er_params.properties.patrol_types.ecoscope:transform":
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: patrol_type
+          depends_on: properties.er_client_name.properties.data_source.properties.name
+    "Patrol and Event Types.properties.er_params.properties.patrol_types.description": >-
+      Specify the patrol type(s) to analyze (optional). Leave empty to analyze
+      all patrol types.
+    "Patrol and Event Types.properties.er_params.properties.event_types.description": >-
+      Specify the event type(s) to count (optional). Enter the "Event Types"
+      value for each event type — one per field (e.g. "wildlife_sighting_rep").
+      Leave empty to count all patrol events.
+    "Patrol and Event Types.properties.er_params.properties.event_types.default": []
+    "Patrol and Event Types.properties.er_params.properties.status.default": ["done"]
+
+    # --- Group Data: Value + Temporal + Spatial groupers ---
+    "Group Data.properties.groupers.title": ""
+    "Group Data.properties.groupers.properties.groupers.description": ""
+    "Group Data.properties.groupers.properties.groupers.items.anyOf":
+      - {"$ref": "#/$defs/ValueGrouper"}
+      - {"$ref": "#/$defs/TemporalGrouper"}
+      - {"$ref": "#/$defs/SpatialGrouper"}
+    "Group Data.properties.groupers.properties.groupers.ecoscope:transform":
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: spatial_feature_group
+          depends_on: properties.er_client_name.properties.data_source.properties.name
+
+    # --- Trend Chart: metric picker ---
+    "Trend Chart.properties.summary_metrics.title": ""
+    "Trend Chart.properties.summary_metrics.properties.metrics.title": "Metrics"
+    "Trend Chart.properties.summary_metrics.properties.metrics.description": >-
+      Metrics shown in the trend chart. In "By Category" and "By Spatial
+      Group" chart modes keep exactly ONE metric row.
+
+    # --- Trend Chart: Chart Mode (discriminated union) ---
+    "Trend Chart.properties.chart_mode.title": ""
+    "Trend Chart.properties.chart_mode.properties.mode.title": "Chart Mode"
+    "Trend Chart.properties.chart_mode.properties.mode.description": >-
+      What each bar series represents: one series per metric, or one series
+      per category value / spatial region (single metric).
+    # Spatial feature group options enumerate the ER site's groups. NOTE:
+    # transform depth inside a oneOf branch is unproven — verify in the
+    # config-form-playground; fallback is free-text entry with ui:help.
+    "Trend Chart.properties.chart_mode.properties.mode.oneOf[2].properties.spatial_feature_group.ecoscope:transform":
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: spatial_feature_group
+          depends_on: properties.er_client_name.properties.data_source.properties.name
+
+    # --- Trend Chart: chart instance (time_interval + barmode user-facing) ---
+    "Trend Chart.properties.trend_chart.title": ""
+    "Trend Chart.properties.trend_chart.properties.time_interval.title": "Time Interval"
+    "Trend Chart.properties.trend_chart.properties.time_interval.default": "month"
+    "Trend Chart.properties.trend_chart.properties.time_interval.description": >-
+      Choose the time interval for the x-axis to control how metrics are
+      summarized over time.
+    "Trend Chart.properties.trend_chart.properties.barmode.title": "Bar Mode"
+    "Trend Chart.properties.trend_chart.properties.barmode.default": "group"
+    "Trend Chart.properties.trend_chart.properties.barmode.oneOf": [
+      {"const": "group", "title": "Grouped"},
+      {"const": "stack", "title": "Stacked"},
+    ]
+    "Trend Chart.properties.trend_chart.properties.barmode.description": >-
+      Grouped shows series side by side; Stacked piles them up (best when all
+      series share a unit).
+
+  $defs:
+    ValueGrouper:
+      title: "Category"
+      type: "object"
+      properties:
+        index_name:
+          title: "Index Name"
+          type: "string"
+          oneOf:
+            - const: "patrol_serial_number"
+              title: "Patrol Serial Number"
+            - const: "patrol_type"
+              title: "Patrol Type"
+            - const: "patrol_subject"
+              title: "Patrol Subject"
+
+  uiSchema:
+    Patrol and Event Types.er_params.patrol_types.items.ui:help: >-
+      If you are on Ecoscope Desktop, "Patrol Type" values can be found in your
+      EarthRanger Admin site under Activity → Patrol Types.
+    Filter Data.patrol_filters.filter_point_coords.items.ui:options.label: false
+    # Task-level "Event Field to Sum" is superseded by the per-metric field —
+    # hide it on this form.
+    Trend Chart.summary_metrics.aggregate_column.ui:widget: hidden
+    # Preset metric rows (patrol-effort-table pattern): per-branch uiSchema,
+    # one entry per union member IN UNION ORDER (alphabetical by title):
+    # area_covered_merged, area_covered_unmerged, custom,
+    # event_sum_per_distance, event_sum_per_duration, events_per_distance,
+    # events_per_duration, events_per_patrol, events_per_patrol_day,
+    # patrol_count, patrol_days, total_distance, total_duration,
+    # total_event_sum, total_events.
+    "Trend Chart.summary_metrics.metrics.items.oneOf":
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+      - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
+
+task-instance-defaults:
+  skipif:
+    conditions:
+      - any_is_empty_df
+      - any_dependency_skipped
+
+workflow:
+  # ---------- Setup ----------
+  - name: Workflow Details
+    id: workflow_details
+    task: set_workflow_details
+
+  - name: Data Source
+    id: er_client_name
+    task: set_er_connection
+
+  - name: Time Range
+    id: time_range
+    task: set_time_range
+    partial:
+      time_format: '%d %b %Y %H:%M:%S %Z'
+
+  - name: Extract Timezone Selection
+    id: get_timezone
+    task: get_timezone_from_time_range
+    partial:
+      time_range: ${{ workflow.time_range.return }}
+
+  # ---------- Fetch (single patrol call → obs + events) ----------
+  - title: Patrol and Event Types
+    type: task-group
+    description: " "
+    tasks:
+      - name: Patrol and Event Params
+        id: er_params
+        task: set_patrols_and_patrol_events_params
+        partial:
+          client: ${{ workflow.er_client_name.return }}
+          time_range: ${{ workflow.time_range.return }}
+          include_patrol_details: true
+          raise_on_empty: false
+          truncate_to_time_range: true
+          patrols_overlap_daterange: true
+          include_null_geometry: false
+          sub_page_size: 100
+
+      - name: Prefetch Patrols
+        id: prefetch_patrols
+        task: get_patrols_from_combined_params
+        partial:
+          combined_params: ${{ workflow.er_params.return }}
+
+      - name: Get Patrol Observations
+        id: patrol_obs
+        task: get_patrol_observations_from_patrols_df_and_combined_params
+        partial:
+          patrols_df: ${{ workflow.prefetch_patrols.return }}
+          combined_params: ${{ workflow.er_params.return }}
+
+      - name: Unpack Patrol Events
+        id: patrol_events
+        task: unpack_events_from_patrols_df_and_combined_params
+        partial:
+          patrols_df: ${{ workflow.prefetch_patrols.return }}
+          combined_params: ${{ workflow.er_params.return }}
+
+      # Resolve event_type slugs to display names (wt-download-patrols
+      # pattern) so By Category (Event Type) legends show "Wildlife
+      # Sighting" instead of "wildlife_sighting_rep". Canned fixture exists.
+      - name: Resolve Event Type Display Names
+        id: event_display_names
+        task: get_event_type_display_names_from_events
+        partial:
+          client: ${{ workflow.er_client_name.return }}
+          events_gdf: ${{ workflow.patrol_events.return }}
+          append_category_names: "duplicates"
+
+  # ---------- Filter Data (shared card) ----------
+  - title: Filter Data
+    type: task-group
+    description: " "
+    tasks:
+      - name: Filters
+        id: patrol_filters
+        task: ecoscope.platform.tasks.config.set_traj_filters
+
+  - name: Split Bounding Box
+    id: bounding_box
+    task: ecoscope.platform.tasks.config.get_bounding_box
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  - name: Split Point Coordinates
+    id: filter_point_coords
+    task: ecoscope.platform.tasks.config.get_filter_point_coords
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  - name: Split Segment Filter
+    id: segment_filter
+    task: ecoscope.platform.tasks.config.get_segment_filter
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  # ---------- Group Data (dashboard groupers; default [] -> single view) ----------
+  - title: Group Data
+    type: task-group
+    description: >-
+      Configure how results are grouped (by category, temporal index or spatial
+      feature group) and split into per-group dashboard views.
+    tasks:
+      - name: Group Data
+        id: groupers
+        task: set_groupers
+
+  # Resolve spatial groupers (no-op when none configured).
+  - task: extract_spatial_grouper_feature_group_names
+    id: spatial_group_ids
+    partial:
+      groupers: ${{ workflow.groupers.return }}
+
+  - task: get_spatial_features_group
+    id: fetch_spatial_groups
+    partial:
+      client: ${{ workflow.er_client_name.return }}
+    map:
+      argnames: spatial_features_group_name
+      argvalues: ${{ workflow.spatial_group_ids.return }}
+
+  - task: resolve_spatial_feature_groups_for_spatial_groupers
+    id: resolved_groupers
+    skipif:
+      conditions:
+        - never
+    partial:
+      groupers: ${{ workflow.groupers.return }}
+      spatial_feature_groups: ${{ workflow.fetch_spatial_groups.return }}
+
+  - name: Trend Chart Title
+    id: set_chart_title
+    task: set_string_var
+    partial:
+      var: "Patrol Trend"
+
+  # ---------- Trend Chart config (user-facing card) ----------
+  # Card field order = task order: Metrics rows, then Chart Mode, then the
+  # chart's Time Interval + Bar Mode (from the trend_chart instance below,
+  # same card title).
+  - title: Trend Chart
+    type: task-group
+    description: >-
+      Configure the patrol trend bar chart: pick the metrics, what each bar
+      series represents, the time interval for the x-axis, and grouped or
+      stacked bars.
+    tasks:
+      - name: Metrics
+        id: summary_metrics
+        task: set_encounter_rate_metrics
+
+      - name: Chart Mode
+        id: chart_mode
+        task: set_trend_chart_mode
+
+  # Chart-mode splitters — all inputs via partial, so no form fields.
+  - name: Split Breakdown Category
+    id: breakdown_category
+    task: get_chart_mode_category_column
+    partial:
+      mode: ${{ workflow.chart_mode.return }}
+
+  - name: Split Breakdown Spatial Groupers
+    id: breakdown_spatial_groupers
+    task: get_chart_mode_spatial_groupers
+    partial:
+      mode: ${{ workflow.chart_mode.return }}
+
+  # Resolve the breakdown spatial feature group (empty list -> no-ops).
+  - task: extract_spatial_grouper_feature_group_names
+    id: breakdown_group_ids
+    partial:
+      groupers: ${{ workflow.breakdown_spatial_groupers.return }}
+
+  - task: get_spatial_features_group
+    id: fetch_breakdown_groups
+    partial:
+      client: ${{ workflow.er_client_name.return }}
+    map:
+      argnames: spatial_features_group_name
+      argvalues: ${{ workflow.breakdown_group_ids.return }}
+
+  - task: resolve_spatial_feature_groups_for_spatial_groupers
+    id: resolved_breakdown_groupers
+    skipif:
+      conditions:
+        - never
+    partial:
+      groupers: ${{ workflow.breakdown_spatial_groupers.return }}
+      spatial_feature_groups: ${{ workflow.fetch_breakdown_groups.return }}
+
+  # ---------- Process Patrol Observations → Trajectories ----------
+  - title: Process Patrol Observations
+    type: task-group
+    description: "Convert patrol observations to trajectory segments and index them for grouping."
+    tasks:
+      - name: Convert Observations to Timezone
+        id: convert_obs_tz
+        task: convert_values_to_timezone
+        partial:
+          df: ${{ workflow.patrol_obs.return }}
+          timezone: ${{ workflow.get_timezone.return }}
+          columns: ["fixtime"]
+
+      - name: Remove Column Prefix (Observations)
+        id: drop_prefix_obs
+        task: drop_column_prefix
+        partial:
+          df: ${{ workflow.convert_obs_tz.return }}
+          prefix: "extra__"
+          duplicate_strategy: "suffix"
+
+      - name: Filter Patrol Observations
+        id: filter_patrol_obs
+        task: apply_reloc_coord_filter
+        partial:
+          df: ${{ workflow.drop_prefix_obs.return }}
+          bounding_box: ${{ workflow.bounding_box.return }}
+          filter_point_coords: ${{ workflow.filter_point_coords.return }}
+          roi_gdf: null
+          roi_name: null
+          reset_index: false
+
+      - name: Relocations to Trajectory
+        id: patrol_traj
+        task: relocations_to_trajectory
+        partial:
+          relocations: ${{ workflow.filter_patrol_obs.return }}
+          trajectory_segment_filter: ${{ workflow.segment_filter.return }}
+
+      - name: Remove Column Prefix (Trajectories)
+        id: drop_prefix_traj
+        task: drop_column_prefix
+        partial:
+          df: ${{ workflow.patrol_traj.return }}
+          prefix: "extra__"
+          duplicate_strategy: "suffix"
+
+      # Align the traj category column name with the events branch:
+      # events carry `patrol_type` (the value slug); trajectories carry
+      # `patrol_type__value` (encounter-rate-stats convention).
+      - name: Rename Trajectory Category Columns
+        id: traj_rename_cols
+        task: map_columns
+        partial:
+          df: ${{ workflow.drop_prefix_traj.return }}
+          drop_columns: ["patrol_type"]
+          retain_columns: []
+          rename_columns:
+            patrol_type__value: patrol_type
+          raise_if_not_found: false
+
+      # Patrol days = distinct calendar days with patrol MOVEMENT: the
+      # patrol_days / events_per_patrol_day metrics take nunique of the
+      # deterministic `segment_start_date` column added here.
+      - name: Add Patrol Date
+        id: traj_with_date
+        task: decompose_datetime
+        partial:
+          df: ${{ workflow.traj_rename_cols.return }}
+          datetime_column: segment_start
+          components:
+            - date
+          remove_source: false
+          column_prefix: null
+
+      - name: Add Temporal Index to Trajectories
+        id: traj_temporal_index
+        task: add_temporal_index
+        partial:
+          df: ${{ workflow.traj_with_date.return }}
+          time_col: segment_start
+          groupers: ${{ workflow.resolved_groupers.return }}
+          cast_to_datetime: true
+          format: mixed
+
+      - name: Add Spatial Index to Trajectories
+        id: traj_spatial_index
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.traj_temporal_index.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
+
+      # Second spatial pass tags rows with the Chart Mode's spatial feature
+      # group regions (no-op unless By Spatial Group; idempotency guards
+      # skip groups Group Data already indexed).
+      - name: Add Breakdown Spatial Index to Trajectories
+        id: traj_breakdown_spatial
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.traj_spatial_index.return }}
+          groupers: ${{ workflow.resolved_breakdown_groupers.return }}
+
+      # Unify the per-row timestamp column across branches so the chart's
+      # x_axis can be a single bound name. Runs AFTER the temporal index
+      # (which consumes segment_start).
+      - name: Rename Trajectory Time Column
+        id: traj_rename_time
+        task: map_columns
+        partial:
+          df: ${{ workflow.traj_breakdown_spatial.return }}
+          drop_columns: []
+          retain_columns: []
+          rename_columns:
+            segment_start: trend_time
+          raise_if_not_found: true
+
+  # ---------- Process Patrol Events ----------
+  - title: Process Patrol Events
+    type: task-group
+    description: "Filter patrol events and index them for grouping."
+    tasks:
+      - name: Convert Events to Timezone
+        id: convert_events_tz
+        task: convert_values_to_timezone
+        partial:
+          # Route through the display-name resolver so event_type_display
+          # reaches the combined frame for By Category (Event Type) legends.
+          df: ${{ workflow.event_display_names.return }}
+          timezone: ${{ workflow.get_timezone.return }}
+          columns: ["time"]
+
+      - name: Remove Column Prefix (Events)
+        id: drop_prefix_events
+        task: drop_column_prefix
+        partial:
+          df: ${{ workflow.convert_events_tz.return }}
+          prefix: "extra__"
+          duplicate_strategy: "suffix"
+
+      - name: Filter Patrol Events
+        id: filter_patrol_events
+        task: apply_reloc_coord_filter
+        partial:
+          df: ${{ workflow.drop_prefix_events.return }}
+          bounding_box: ${{ workflow.bounding_box.return }}
+          filter_point_coords: ${{ workflow.filter_point_coords.return }}
+          roi_gdf: null
+          roi_name: null
+          reset_index: true
+
+      - name: Add Temporal Index to Events
+        id: events_temporal_index
+        task: add_temporal_index
+        partial:
+          df: ${{ workflow.filter_patrol_events.return }}
+          time_col: time
+          groupers: ${{ workflow.resolved_groupers.return }}
+          cast_to_datetime: true
+          format: mixed
+
+      - name: Add Spatial Index to Events
+        id: events_spatial_index
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.events_temporal_index.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
+
+      # Second spatial pass for the Chart Mode breakdown (see trajectories).
+      - name: Add Breakdown Spatial Index to Events
+        id: events_breakdown_spatial
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.events_spatial_index.return }}
+          groupers: ${{ workflow.resolved_breakdown_groupers.return }}
+
+      # Same unified timestamp column on the events branch (events bucket on
+      # their own event time).
+      - name: Rename Event Time Column
+        id: events_rename_time
+        task: map_columns
+        partial:
+          df: ${{ workflow.events_breakdown_spatial.return }}
+          drop_columns: []
+          retain_columns: []
+          rename_columns:
+            time: trend_time
+          raise_if_not_found: true
+
+  # ---------- Combine & Split ----------
+  # concat_dataframes drops skip sentinels, so an empty events branch degrades
+  # to "0 events", not a failed run.
+  - name: Combine Trajectories and Events
+    id: combined_df
+    task: concat_dataframes
+    skipif:
+      conditions:
+        - never
+    partial:
+      dfs:
+        - ${{ workflow.traj_rename_time.return }}
+        - ${{ workflow.events_rename_time.return }}
+      ensure_columns:
+        - event_type
+        - event_type_display
+        - patrol_id
+        - dist_meters
+        - timespan_seconds
+        - segment_start_date
+        - patrol_subject
+        - patrol_type
+        - patrol_serial_number
+        - trend_time
+      # Keep the index: add_temporal_index / add_spatial_index append grouper
+      # keys as index levels (incl. the breakdown SpatialGrouper_<group>
+      # level), and split_groups / the chart groupby use those level names.
+      reset_index: false
+
+  - name: Cast Category Columns to String
+    id: combined_to_string
+    task: convert_column_values_to_string
+    partial:
+      df: ${{ workflow.combined_df.return }}
+      columns: ["patrol_serial_number", "patrol_type", "patrol_subject"]
+
+  - name: Split by Group
+    id: split_combined
+    task: split_groups
+    partial:
+      df: ${{ workflow.combined_to_string.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
+
+  # ---------- Trend Chart instance (per dashboard view) ----------
+  # Metric computation happens inside the chart task (metric mode). category
+  # comes from the Chart Mode splitter: None (one series per metric), a
+  # category column, or a SpatialGrouper_<group> index level (one series per
+  # value; single metric enforced by the task). time_interval and barmode
+  # are the user-facing chart fields (patrols pattern) — rendered on the
+  # Trend Chart card via the same group title.
+  - title: Trend Chart
+    type: task-group
+    description: " "
+    tasks:
+      - name: null
+        id: trend_chart
+        task: draw_time_series_bar_chart
+        partial:
+          x_axis: trend_time
+          y_axis: null
+          agg_function: null
+          category: ${{ workflow.breakdown_category.return }}
+          summary_params: ${{ workflow.summary_metrics.return }}
+          palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
+          color_column: null
+          plot_style: null
+          layout_style: null
+          widget_id: ${{ workflow.set_chart_title.return }}
+        mapvalues:
+          argnames: dataframe
+          argvalues: ${{ workflow.split_combined.return }}
+
+  - name: Persist Trend Chart
+    id: trend_chart_html
+    task: persist_text
+    partial:
+      root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
+      filename_suffix: trend_chart
+    mapvalues:
+      argnames: text
+      argvalues: ${{ workflow.trend_chart.return }}
+
+  - name: Create Trend Chart Widget
+    id: trend_chart_widget
+    task: create_plot_widget_single_view
+    skipif:
+      conditions:
+        - never
+    partial:
+      title: ${{ workflow.set_chart_title.return }}
+    map:
+      argnames: [view, data]
+      argvalues: ${{ workflow.trend_chart_html.return }}
+
+  - name: Merge Trend Chart Views
+    id: trend_widget_merged
+    task: merge_widget_views
+    partial:
+      widgets: ${{ workflow.trend_chart_widget.return }}
+
+  # ---------- Dashboard ----------
+  - name: Create Dashboard
+    id: trend_dashboard
+    task: gather_dashboard
+    partial:
+      details: ${{ workflow.workflow_details.return }}
+      widgets:
+        - ${{ workflow.trend_widget_merged.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
+      time_range: ${{ workflow.time_range.return }}
