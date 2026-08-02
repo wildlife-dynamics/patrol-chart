@@ -469,6 +469,40 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    time_interval = (
+        task(set_string_var)
+        .validate()
+        .set_task_instance_id("time_interval")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("time_interval") or {}))
+        .call()
+    )
+
+    barmode = (
+        task(set_string_var)
+        .validate()
+        .set_task_instance_id("barmode")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("barmode") or {}))
+        .call()
+    )
+
     breakdown_category = (
         task(get_chart_mode_category_column)
         .validate()
@@ -1058,6 +1092,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             x_axis="trend_time",
+            time_interval=time_interval,
+            barmode=barmode,
             y_axis=None,
             agg_function=None,
             category=breakdown_category,

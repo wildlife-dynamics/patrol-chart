@@ -5,8 +5,8 @@
 
 ```yaml
 # fingerprint:
-artifacts_sha256_basic: cb4a778c2dfc2674d5f4cf0859baa7060c7f05940e2c5d9a73ab2109c5624e80
-artifacts_sha256_strict: 93045b46a59e2250fe01e4726d90ce8b23fda92af8fe02e15e98826135b01d1c
+artifacts_sha256_basic: 279b8a90e057fec914a7d3b820da95a7b9acde113478ba033e775c6b5d4738ad
+artifacts_sha256_strict: fabfa7b9778e8e598a5f8f503b25ce13abafa23716a84749463e1fa354d2e939
 installed_requirements:
 - channel: conda-forge
   name: python
@@ -26,8 +26,8 @@ installed_requirements:
 - channel: conda-forge
   name: pydeck
   version: {version: ==0.9.2}
-params_sha256: adbc5380078b82c0c231d78bb7d494e94cfb501298e2e5dfb294aba9ab979f57
-spec_sha256: 2f11df3a770c72c62c1ef24cab3a89e11362ab3075283a35428c6efc4f593dd6
+params_sha256: 4e8c3148d389fd9a5a8cfb4e456bfec64f22e0d3bc1896f0f86c616ec8349961
+spec_sha256: de91df5e1c3df86b8b0bcf271de518d06960ad599394e34ee0a7bb10e07bcace
 
 ```
 

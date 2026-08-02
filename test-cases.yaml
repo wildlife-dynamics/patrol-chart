@@ -35,9 +35,10 @@ base:
     chart_mode:
       mode:
         mode: "metrics"
-    trend_chart:
-      time_interval: "month"
-      barmode: "group"
+    time_interval:
+      var: "month"
+    barmode:
+      var: "group"
 
 event-sum-fields:
   name: Per-metric event fields
@@ -78,9 +79,10 @@ event-sum-fields:
     chart_mode:
       mode:
         mode: "metrics"
-    trend_chart:
-      time_interval: "month"
-      barmode: "group"
+    time_interval:
+      var: "month"
+    barmode:
+      var: "group"
 
 week-interval:
   name: Week interval
@@ -113,9 +115,10 @@ week-interval:
     chart_mode:
       mode:
         mode: "metrics"
-    trend_chart:
-      time_interval: "week"
-      barmode: "group"
+    time_interval:
+      var: "week"
+    barmode:
+      var: "group"
 
 stacked:
   name: Stacked bars
@@ -148,9 +151,10 @@ stacked:
     chart_mode:
       mode:
         mode: "metrics"
-    trend_chart:
-      time_interval: "month"
-      barmode: "stack"
+    time_interval:
+      var: "month"
+    barmode:
+      var: "stack"
 
 category-mode:
   name: By Category (event type)
@@ -186,9 +190,10 @@ category-mode:
       mode:
         mode: "category"
         category: "event_type_display"
-    trend_chart:
-      time_interval: "month"
-      barmode: "stack"
+    time_interval:
+      var: "month"
+    barmode:
+      var: "stack"
 
 spatial-mode:
   name: By Spatial Group
@@ -225,9 +230,10 @@ spatial-mode:
       mode:
         mode: "spatial"
         spatial_feature_group: "SpatialGrouperTest"
-    trend_chart:
-      time_interval: "month"
-      barmode: "group"
+    time_interval:
+      var: "month"
+    barmode:
+      var: "group"
 
 month-grouper:
   name: Month grouper
@@ -261,6 +267,7 @@ month-grouper:
     chart_mode:
       mode:
         mode: "metrics"
-    trend_chart:
-      time_interval: "week"
-      barmode: "group"
+    time_interval:
+      var: "week"
+    barmode:
+      var: "group"

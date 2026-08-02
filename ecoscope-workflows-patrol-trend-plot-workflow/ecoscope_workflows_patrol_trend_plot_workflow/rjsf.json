@@ -249,34 +249,290 @@
     },
     "Trend Chart": {
       "type": "object",
-      "description": " ",
+      "description": "Configure the patrol trend bar chart: pick the metrics, what each bar series represents, the time interval for the x-axis, and grouped or stacked bars.",
       "ecoscope:task_group": true,
       "properties": {
-        "trend_chart": {
+        "summary_metrics": {
           "additionalProperties": false,
           "properties": {
-            "time_interval": {
-              "enum": [
-                "year",
-                "month",
-                "week",
-                "day",
-                "hour"
+            "aggregation": {
+              "default": null,
+              "title": "",
+              "type": "object",
+              "properties": {
+                "count_or_sum": {
+                  "type": "string",
+                  "title": "Measure Events By",
+                  "default": "Count",
+                  "oneOf": [
+                    {
+                      "const": "Count",
+                      "title": "Number of Events"
+                    },
+                    {
+                      "const": "Sum of Column",
+                      "title": "Sum of an Event Field"
+                    }
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "count_or_sum": {
+                        "const": "Sum of Column"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "column": {
+                        "type": "string",
+                        "title": "Event Field to Sum",
+                        "description": "Event details field whose values are totaled for the Event Sum metrics (Total Event Sum and the Event Sum rates), using the field title shown in EarthRanger (for example \"Number of Animals\")."
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "metrics": {
+              "default": [
+                {
+                  "metric": "total_event_sum"
+                },
+                {
+                  "metric": "total_duration",
+                  "unit": "h"
+                },
+                {
+                  "metric": "event_sum_per_duration",
+                  "unit": "h"
+                },
+                {
+                  "metric": "total_distance",
+                  "unit": "km"
+                },
+                {
+                  "metric": "event_sum_per_distance",
+                  "unit": "km"
+                }
               ],
+              "items": {
+                "discriminator": {
+                  "mapping": {
+                    "area_covered_merged": "#/$defs/MergedAreaCoveredMetric",
+                    "area_covered_unmerged": "#/$defs/UnmergedAreaCoveredMetric",
+                    "custom": "#/$defs/CustomMetric",
+                    "event_sum_per_distance": "#/$defs/EventSumPerDistanceMetric",
+                    "event_sum_per_duration": "#/$defs/EventSumPerDurationMetric",
+                    "events_per_distance": "#/$defs/EventsPerDistanceMetric",
+                    "events_per_duration": "#/$defs/EventsPerDurationMetric",
+                    "events_per_patrol": "#/$defs/EventsPerPatrolMetric",
+                    "events_per_patrol_day": "#/$defs/EventsPerPatrolDayMetric",
+                    "patrol_count": "#/$defs/PatrolCountMetric",
+                    "patrol_days": "#/$defs/PatrolDaysMetric",
+                    "total_distance": "#/$defs/TotalDistanceMetric",
+                    "total_duration": "#/$defs/TotalDurationMetric",
+                    "total_event_sum": "#/$defs/TotalEventSumMetric",
+                    "total_events": "#/$defs/TotalEventsMetric"
+                  },
+                  "propertyName": "metric"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/MergedAreaCoveredMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/UnmergedAreaCoveredMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/CustomMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/EventSumPerDistanceMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/EventSumPerDurationMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/EventsPerDistanceMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/EventsPerDurationMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/EventsPerPatrolMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/EventsPerPatrolDayMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/PatrolCountMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/PatrolDaysMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/TotalDistanceMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/TotalDurationMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/TotalEventSumMetric"
+                  },
+                  {
+                    "$ref": "#/$defs/TotalEventsMetric"
+                  }
+                ]
+              },
+              "title": "Metrics",
+              "type": "array",
+              "description": "Metrics shown in the trend chart. In \"By Category\" and \"By Spatial Group\" chart modes keep exactly ONE metric row."
+            }
+          },
+          "type": "object",
+          "required": [],
+          "title": ""
+        },
+        "chart_mode": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "default": null,
+              "title": "",
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "title": "Chart Mode",
+                  "default": "metrics",
+                  "oneOf": [
+                    {
+                      "const": "metrics",
+                      "title": "Multiple Metrics"
+                    },
+                    {
+                      "const": "category",
+                      "title": "By Category"
+                    },
+                    {
+                      "const": "spatial",
+                      "title": "By Spatial Group"
+                    }
+                  ],
+                  "description": "What each bar series represents: one series per metric, or one series per category value / spatial region (single metric)."
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "mode": {
+                        "const": "category"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "title": "Category",
+                        "description": "The category to split the metric by.",
+                        "oneOf": [
+                          {
+                            "const": "event_type_display",
+                            "title": "Event Type"
+                          },
+                          {
+                            "const": "patrol_type",
+                            "title": "Patrol Type"
+                          },
+                          {
+                            "const": "patrol_subject",
+                            "title": "Patrol Subject"
+                          },
+                          {
+                            "const": "patrol_serial_number",
+                            "title": "Patrol Serial Number"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "mode": {
+                        "const": "spatial"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "spatial_feature_group": {
+                        "type": "string",
+                        "title": "Spatial Feature Group",
+                        "description": "The EarthRanger spatial feature group whose regions split the metric into series."
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "type": "object",
+          "required": [],
+          "title": ""
+        },
+        "time_interval": {
+          "additionalProperties": false,
+          "properties": {
+            "var": {
               "title": "Time Interval",
               "type": "string",
               "default": "month",
-              "description": "Choose the time interval for the x-axis to control how metrics are summarized over time."
-            },
-            "barmode": {
-              "default": "group",
-              "enum": [
-                "stack",
-                "group"
+              "oneOf": [
+                {
+                  "const": "year",
+                  "title": "Year"
+                },
+                {
+                  "const": "month",
+                  "title": "Month"
+                },
+                {
+                  "const": "week",
+                  "title": "Week"
+                },
+                {
+                  "const": "day",
+                  "title": "Day"
+                },
+                {
+                  "const": "hour",
+                  "title": "Hour"
+                }
               ],
+              "description": "Choose the time interval for the x-axis to control how metrics are summarized over time."
+            }
+          },
+          "required": [
+            "var"
+          ],
+          "type": "object",
+          "title": ""
+        },
+        "barmode": {
+          "additionalProperties": false,
+          "properties": {
+            "var": {
               "title": "Bar Mode",
               "type": "string",
-              "description": "Grouped shows series side by side; Stacked piles them up (best when all series share a unit).",
+              "default": "group",
               "oneOf": [
                 {
                   "const": "group",
@@ -286,47 +542,15 @@
                   "const": "stack",
                   "title": "Stacked"
                 }
-              ]
+              ],
+              "description": "Grouped shows series side by side; Stacked piles them up (best when all series share a unit)."
             }
           },
           "required": [
-            "time_interval"
+            "var"
           ],
           "type": "object",
           "title": ""
-        },
-        "summary_metrics": {
-          "title": "",
-          "properties": {
-            "metrics": {
-              "title": "Metrics",
-              "description": "Metrics shown in the trend chart. In \"By Category\" and \"By Spatial Group\" chart modes keep exactly ONE metric row."
-            }
-          }
-        },
-        "chart_mode": {
-          "title": "",
-          "properties": {
-            "mode": {
-              "title": "Chart Mode",
-              "description": "What each bar series represents: one series per metric, or one series per category value / spatial region (single metric).",
-              "oneOf[2]": {
-                "properties": {
-                  "spatial_feature_group": {
-                    "ecoscope:transform": [
-                      {
-                        "transformer": "EarthRangerEnumResolver",
-                        "transformer_kws": {
-                          "type": "spatial_feature_group",
-                          "depends_on": "properties.er_client_name.properties.data_source.properties.name"
-                        }
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
         }
       }
     }
@@ -1097,15 +1321,19 @@
     "Trend Chart": {
       "ui:order": [
         "summary_metrics",
-        "chart_mode"
+        "chart_mode",
+        "time_interval",
+        "barmode"
       ],
       "summary_metrics": {
         "ui:order": [
           "aggregation",
           "metrics"
         ],
-        "aggregate_column": {
-          "ui:widget": "hidden"
+        "aggregation": {
+          "count_or_sum": {
+            "ui:widget": "hidden"
+          }
         },
         "metrics": {
           "items": {
@@ -1234,11 +1462,12 @@
           }
         }
       },
-      "trend_chart": {
-        "ui:order": [
-          "time_interval",
-          "barmode"
-        ]
+      "chart_mode": {
+        "mode": {
+          "spatial_feature_group": {
+            "ui:help": "Enter the spatial feature group name exactly as it appears in your EarthRanger site (Mapping \u2192 Spatial Feature Group Profiles)."
+          }
+        }
       }
     },
     "ui:order": [

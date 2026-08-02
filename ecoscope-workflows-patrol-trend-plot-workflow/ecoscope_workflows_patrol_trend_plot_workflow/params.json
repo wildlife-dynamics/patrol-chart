@@ -442,36 +442,33 @@
       "required": [],
       "title": "Chart Mode"
     },
-    "trend_chart": {
+    "time_interval": {
       "additionalProperties": false,
       "properties": {
-        "time_interval": {
-          "enum": [
-            "year",
-            "month",
-            "week",
-            "day",
-            "hour"
-          ],
-          "title": "Time Interval",
+        "var": {
+          "title": "",
           "type": "string"
-        },
-        "barmode": {
-          "default": "stack",
-          "enum": [
-            "stack",
-            "group"
-          ],
-          "title": "Barmode",
-          "type": "string",
-          "description": "How to arrange the metric bar series within each time bucket."
         }
       },
       "required": [
-        "time_interval"
+        "var"
       ],
       "type": "object",
-      "title": ""
+      "title": "Time Interval"
+    },
+    "barmode": {
+      "additionalProperties": false,
+      "properties": {
+        "var": {
+          "title": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "var"
+      ],
+      "type": "object",
+      "title": "Bar Mode"
     }
   },
   "$defs": {
@@ -1216,12 +1213,6 @@
         "metrics"
       ]
     },
-    "trend_chart": {
-      "ui:order": [
-        "time_interval",
-        "barmode"
-      ]
-    },
     "ui:order": [
       "workflow_details",
       "er_client_name",
@@ -1231,7 +1222,8 @@
       "groupers",
       "summary_metrics",
       "chart_mode",
-      "trend_chart"
+      "time_interval",
+      "barmode"
     ]
   },
   "additionalProperties": false
