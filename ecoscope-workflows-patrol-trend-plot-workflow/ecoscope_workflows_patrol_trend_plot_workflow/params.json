@@ -1,0 +1,1238 @@
+{
+  "properties": {
+    "workflow_details": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Workflow Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Workflow Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object",
+      "description": "Add information that will help to differentiate this workflow from another.",
+      "title": "Workflow Details"
+    },
+    "er_client_name": {
+      "additionalProperties": false,
+      "properties": {
+        "data_source": {
+          "$ref": "#/$defs/EarthRangerConnection",
+          "title": "",
+          "description": "Select one of your configured data sources."
+        }
+      },
+      "required": [
+        "data_source"
+      ],
+      "type": "object",
+      "title": "Data Source"
+    },
+    "time_range": {
+      "additionalProperties": false,
+      "properties": {
+        "since": {
+          "format": "date-time",
+          "title": "Since",
+          "type": "string",
+          "description": "The start time"
+        },
+        "until": {
+          "format": "date-time",
+          "title": "Until",
+          "type": "string",
+          "description": "The end time"
+        },
+        "timezone": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TimezoneInfo"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "required": [
+        "since",
+        "until"
+      ],
+      "type": "object",
+      "description": "Choose the period of time to analyze.",
+      "title": "Time Range"
+    },
+    "er_params": {
+      "additionalProperties": false,
+      "properties": {
+        "patrol_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Patrol Types",
+          "type": "array",
+          "description": "Specify the patrol type(s) to analyze (optional). Leave empty to analyze all patrol types."
+        },
+        "event_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Event Types",
+          "type": "array",
+          "description": "Specify the event type(s) to analyze (optional). Leave this section empty to analyze all event types."
+        },
+        "status": {
+          "default": [
+            "done"
+          ],
+          "items": {
+            "enum": [
+              "active",
+              "overdue",
+              "done",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "title": "Patrol Status",
+          "type": "array",
+          "description": "Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed",
+          "uniqueItems": true,
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [
+        "patrol_types",
+        "event_types"
+      ],
+      "type": "object",
+      "title": "Patrol and Event Params"
+    },
+    "patrol_filters": {
+      "additionalProperties": false,
+      "properties": {
+        "bounding_box": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BoundingBox"
+            }
+          ],
+          "default": {
+            "min_y": -90.0,
+            "max_y": 90.0,
+            "min_x": -180.0,
+            "max_x": 180.0
+          },
+          "title": "Bounding Box",
+          "description": "Only include observations/events inside this bounding box.",
+          "ecoscope:advanced": true
+        },
+        "filter_point_coords": {
+          "default": [
+            {
+              "y": 90.0,
+              "x": 180.0
+            },
+            {
+              "y": 0.0,
+              "x": 0.0
+            },
+            {
+              "y": 1.0,
+              "x": 1.0
+            }
+          ],
+          "items": {
+            "$ref": "#/$defs/Coordinate"
+          },
+          "title": "Filter Exact Point Coordinates",
+          "type": "array",
+          "description": "Exclude observations/events at these exact coordinates.",
+          "ecoscope:advanced": true
+        },
+        "trajectory_segment_filter": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TrajectorySegmentFilter"
+            }
+          ],
+          "default": {
+            "min_length_meters": 0.001,
+            "max_length_meters": 100000,
+            "min_time_secs": 1,
+            "max_time_secs": 172800,
+            "min_speed_kmhr": 0.01,
+            "max_speed_kmhr": 500
+          },
+          "title": "Trajectory Filter",
+          "description": "Drop trajectory segments outside these length/time/speed bounds.",
+          "ecoscope:advanced": true
+        }
+      },
+      "type": "object",
+      "required": [],
+      "title": "Filters"
+    },
+    "groupers": {
+      "additionalProperties": false,
+      "properties": {
+        "groupers": {
+          "default": null,
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ValueGrouper"
+              },
+              {
+                "$ref": "#/$defs/TemporalGrouper"
+              },
+              {
+                "$ref": "#/$defs/SpatialGrouper"
+              }
+            ],
+            "title": "Group by"
+          },
+          "title": " ",
+          "type": "array",
+          "description": "            Specify how the data should be grouped to create the views for your dashboard.\n            This field is optional; if left blank, all the data will appear in a single view.\n            "
+        }
+      },
+      "type": "object",
+      "required": [],
+      "title": "Group Data"
+    },
+    "summary_metrics": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregation": {
+          "default": null,
+          "title": "",
+          "type": "object",
+          "properties": {
+            "count_or_sum": {
+              "type": "string",
+              "title": "Measure Events By",
+              "default": "Count",
+              "oneOf": [
+                {
+                  "const": "Count",
+                  "title": "Number of Events"
+                },
+                {
+                  "const": "Sum of Column",
+                  "title": "Sum of an Event Field"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "count_or_sum": {
+                    "const": "Sum of Column"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "column": {
+                    "type": "string",
+                    "title": "Event Field to Sum",
+                    "description": "Event details field whose values are totaled for the Event Sum metrics (Total Event Sum and the Event Sum rates), using the field title shown in EarthRanger (for example \"Number of Animals\")."
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "metrics": {
+          "default": [
+            {
+              "metric": "total_event_sum"
+            },
+            {
+              "metric": "total_duration",
+              "unit": "h"
+            },
+            {
+              "metric": "event_sum_per_duration",
+              "unit": "h"
+            },
+            {
+              "metric": "total_distance",
+              "unit": "km"
+            },
+            {
+              "metric": "event_sum_per_distance",
+              "unit": "km"
+            }
+          ],
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "area_covered_merged": "#/$defs/MergedAreaCoveredMetric",
+                "area_covered_unmerged": "#/$defs/UnmergedAreaCoveredMetric",
+                "custom": "#/$defs/CustomMetric",
+                "event_sum_per_distance": "#/$defs/EventSumPerDistanceMetric",
+                "event_sum_per_duration": "#/$defs/EventSumPerDurationMetric",
+                "events_per_distance": "#/$defs/EventsPerDistanceMetric",
+                "events_per_duration": "#/$defs/EventsPerDurationMetric",
+                "events_per_patrol": "#/$defs/EventsPerPatrolMetric",
+                "events_per_patrol_day": "#/$defs/EventsPerPatrolDayMetric",
+                "patrol_count": "#/$defs/PatrolCountMetric",
+                "patrol_days": "#/$defs/PatrolDaysMetric",
+                "total_distance": "#/$defs/TotalDistanceMetric",
+                "total_duration": "#/$defs/TotalDurationMetric",
+                "total_event_sum": "#/$defs/TotalEventSumMetric",
+                "total_events": "#/$defs/TotalEventsMetric"
+              },
+              "propertyName": "metric"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/MergedAreaCoveredMetric"
+              },
+              {
+                "$ref": "#/$defs/UnmergedAreaCoveredMetric"
+              },
+              {
+                "$ref": "#/$defs/CustomMetric"
+              },
+              {
+                "$ref": "#/$defs/EventSumPerDistanceMetric"
+              },
+              {
+                "$ref": "#/$defs/EventSumPerDurationMetric"
+              },
+              {
+                "$ref": "#/$defs/EventsPerDistanceMetric"
+              },
+              {
+                "$ref": "#/$defs/EventsPerDurationMetric"
+              },
+              {
+                "$ref": "#/$defs/EventsPerPatrolMetric"
+              },
+              {
+                "$ref": "#/$defs/EventsPerPatrolDayMetric"
+              },
+              {
+                "$ref": "#/$defs/PatrolCountMetric"
+              },
+              {
+                "$ref": "#/$defs/PatrolDaysMetric"
+              },
+              {
+                "$ref": "#/$defs/TotalDistanceMetric"
+              },
+              {
+                "$ref": "#/$defs/TotalDurationMetric"
+              },
+              {
+                "$ref": "#/$defs/TotalEventSumMetric"
+              },
+              {
+                "$ref": "#/$defs/TotalEventsMetric"
+              }
+            ]
+          },
+          "title": "Metrics",
+          "type": "array",
+          "description": "Metrics shown as columns in the encounter rate table. Add or remove rows to customize."
+        }
+      },
+      "type": "object",
+      "required": [],
+      "title": "Metrics"
+    },
+    "chart_mode": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": null,
+          "title": "",
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "title": "Chart Mode",
+              "default": "metrics",
+              "oneOf": [
+                {
+                  "const": "metrics",
+                  "title": "Multiple Metrics"
+                },
+                {
+                  "const": "category",
+                  "title": "By Category"
+                },
+                {
+                  "const": "spatial",
+                  "title": "By Spatial Group"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "mode": {
+                    "const": "category"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "title": "Category",
+                    "description": "The category to split the metric by.",
+                    "oneOf": [
+                      {
+                        "const": "event_type_display",
+                        "title": "Event Type"
+                      },
+                      {
+                        "const": "patrol_type",
+                        "title": "Patrol Type"
+                      },
+                      {
+                        "const": "patrol_subject",
+                        "title": "Patrol Subject"
+                      },
+                      {
+                        "const": "patrol_serial_number",
+                        "title": "Patrol Serial Number"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "mode": {
+                    "const": "spatial"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "spatial_feature_group": {
+                    "type": "string",
+                    "title": "Spatial Feature Group",
+                    "description": "The EarthRanger spatial feature group whose regions split the metric into series."
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "type": "object",
+      "required": [],
+      "title": "Chart Mode"
+    },
+    "trend_chart": {
+      "additionalProperties": false,
+      "properties": {
+        "time_interval": {
+          "enum": [
+            "year",
+            "month",
+            "week",
+            "day",
+            "hour"
+          ],
+          "title": "Time Interval",
+          "type": "string"
+        },
+        "barmode": {
+          "default": "stack",
+          "enum": [
+            "stack",
+            "group"
+          ],
+          "title": "Barmode",
+          "type": "string",
+          "description": "How to arrange the metric bar series within each time bucket."
+        }
+      },
+      "required": [
+        "time_interval"
+      ],
+      "type": "object",
+      "title": ""
+    }
+  },
+  "$defs": {
+    "EarthRangerConnection": {
+      "properties": {
+        "name": {
+          "title": "Data Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "EarthRangerConnection",
+      "type": "object"
+    },
+    "TimezoneInfo": {
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "tzCode": {
+          "title": "Tzcode",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "utc": {
+          "title": "Utc",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "tzCode",
+        "name",
+        "utc"
+      ],
+      "title": "TimezoneInfo",
+      "type": "object"
+    },
+    "BoundingBox": {
+      "properties": {
+        "min_y": {
+          "default": -90.0,
+          "ecoscope:advanced": true,
+          "title": "Min Latitude",
+          "type": "number"
+        },
+        "max_y": {
+          "default": 90.0,
+          "ecoscope:advanced": true,
+          "title": "Max Latitude",
+          "type": "number"
+        },
+        "min_x": {
+          "default": -180.0,
+          "ecoscope:advanced": true,
+          "title": "Min Longitude",
+          "type": "number"
+        },
+        "max_x": {
+          "default": 180.0,
+          "ecoscope:advanced": true,
+          "title": "Max Longitude",
+          "type": "number"
+        }
+      },
+      "title": "BoundingBox",
+      "type": "object"
+    },
+    "Coordinate": {
+      "properties": {
+        "y": {
+          "description": "Example -0.15293",
+          "title": "Latitude",
+          "type": "number"
+        },
+        "x": {
+          "description": "Example 37.30906",
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "y",
+        "x"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
+    "TrajectorySegmentFilter": {
+      "properties": {
+        "min_length_meters": {
+          "default": 0.001,
+          "ecoscope:advanced": true,
+          "minimum": 0.001,
+          "title": "Minimum Segment Length (Meters)",
+          "type": "number"
+        },
+        "max_length_meters": {
+          "default": 100000,
+          "ecoscope:advanced": true,
+          "exclusiveMinimum": 0.001,
+          "title": "Maximum Segment Length (Meters)",
+          "type": "number"
+        },
+        "min_time_secs": {
+          "default": 1,
+          "ecoscope:advanced": true,
+          "minimum": 1,
+          "title": "Minimum Segment Duration (Seconds)",
+          "type": "number"
+        },
+        "max_time_secs": {
+          "default": 172800,
+          "ecoscope:advanced": true,
+          "exclusiveMinimum": 1,
+          "title": "Maximum Segment Duration (Seconds)",
+          "type": "number"
+        },
+        "min_speed_kmhr": {
+          "default": 0.01,
+          "ecoscope:advanced": true,
+          "exclusiveMinimum": 0.001,
+          "title": "Minimum Segment Speed (Kilometers per Hour)",
+          "type": "number"
+        },
+        "max_speed_kmhr": {
+          "default": 500,
+          "ecoscope:advanced": true,
+          "exclusiveMinimum": 0.001,
+          "title": "Maximum Segment Speed (Kilometers per Hour)",
+          "type": "number"
+        }
+      },
+      "title": "TrajectorySegmentFilter",
+      "type": "object"
+    },
+    "SpatialGrouper": {
+      "properties": {
+        "spatial_index_name": {
+          "title": "Spatial Regions",
+          "type": "string"
+        }
+      },
+      "required": [
+        "spatial_index_name"
+      ],
+      "title": "Spatial",
+      "type": "object"
+    },
+    "TemporalGrouper": {
+      "properties": {
+        "temporal_index": {
+          "oneOf": [
+            {
+              "const": "%Y",
+              "title": "Year (example: 2024)"
+            },
+            {
+              "const": "%B",
+              "title": "Month (example: September)"
+            },
+            {
+              "const": "%Y-%m",
+              "title": "Year and Month (example: 2023-01)"
+            },
+            {
+              "const": "%j",
+              "title": "Day of the year as a number (example: 365)"
+            },
+            {
+              "const": "%d",
+              "title": "Day of the month as a number (example: 31)"
+            },
+            {
+              "const": "%A",
+              "title": "Day of the week (example: Sunday)"
+            },
+            {
+              "const": "%H",
+              "title": "Hour (24-hour clock) as number (example: 22)"
+            },
+            {
+              "const": "%Y-%m-%d",
+              "title": "Date (example: 2025-01-31)"
+            }
+          ],
+          "title": "Time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "temporal_index"
+      ],
+      "title": "Time",
+      "type": "object"
+    },
+    "ValueGrouper": {
+      "properties": {
+        "index_name": {
+          "title": "Category",
+          "type": "string"
+        }
+      },
+      "required": [
+        "index_name"
+      ],
+      "title": "Category",
+      "type": "object"
+    },
+    "CustomMetric": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "convert_units": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "original_unit": {
+                "oneOf": [
+                  {
+                    "const": "m",
+                    "title": "Meters (m)"
+                  },
+                  {
+                    "const": "km",
+                    "title": "Kilometers (km)"
+                  },
+                  {
+                    "const": "m\u00b2",
+                    "title": "Square Meters (m\u00b2)"
+                  },
+                  {
+                    "const": "km\u00b2",
+                    "title": "Square Kilometers (km\u00b2)"
+                  },
+                  {
+                    "const": "s",
+                    "title": "Seconds (s)"
+                  },
+                  {
+                    "const": "h",
+                    "title": "Hours (h)"
+                  },
+                  {
+                    "const": "d",
+                    "title": "Days (d)"
+                  },
+                  {
+                    "const": "m/s",
+                    "title": "Meters per Second (m/s)"
+                  },
+                  {
+                    "const": "km/h",
+                    "title": "Kilometers per Hour (km/h)"
+                  },
+                  {
+                    "const": "%",
+                    "title": "Percent (%)"
+                  }
+                ],
+                "title": "Original Unit",
+                "type": "string"
+              },
+              "new_unit": {
+                "oneOf": [
+                  {
+                    "const": "m",
+                    "title": "Meters (m)"
+                  },
+                  {
+                    "const": "km",
+                    "title": "Kilometers (km)"
+                  },
+                  {
+                    "const": "m\u00b2",
+                    "title": "Square Meters (m\u00b2)"
+                  },
+                  {
+                    "const": "km\u00b2",
+                    "title": "Square Kilometers (km\u00b2)"
+                  },
+                  {
+                    "const": "s",
+                    "title": "Seconds (s)"
+                  },
+                  {
+                    "const": "h",
+                    "title": "Hours (h)"
+                  },
+                  {
+                    "const": "d",
+                    "title": "Days (d)"
+                  },
+                  {
+                    "const": "m/s",
+                    "title": "Meters per Second (m/s)"
+                  },
+                  {
+                    "const": "km/h",
+                    "title": "Kilometers per Hour (km/h)"
+                  },
+                  {
+                    "const": "%",
+                    "title": "Percent (%)"
+                  }
+                ],
+                "title": "New Unit",
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "description": "Define your own metric: pick a column and statistic, with optional unit conversion.",
+      "properties": {
+        "display_name": {
+          "description": "Column header shown in the summary table.",
+          "title": "Display Name",
+          "type": "string"
+        },
+        "aggregator": {
+          "enum": [
+            "sum",
+            "count",
+            "min",
+            "max",
+            "mean",
+            "nunique",
+            "median"
+          ],
+          "title": "Statistic",
+          "type": "string"
+        },
+        "column": {
+          "description": "Column to aggregate.",
+          "title": "Column",
+          "type": "string"
+        },
+        "decimal_places": {
+          "default": 2,
+          "title": "Decimal Places",
+          "type": "integer"
+        },
+        "convert_units": {
+          "default": false,
+          "title": "Convert Units",
+          "type": "boolean"
+        },
+        "metric": {
+          "const": "custom",
+          "default": "custom",
+          "enum": [
+            "custom"
+          ],
+          "title": "Metric",
+          "type": "string"
+        }
+      },
+      "required": [
+        "display_name",
+        "aggregator",
+        "column"
+      ],
+      "title": "Custom",
+      "type": "object"
+    },
+    "EventSumPerDistanceMetric": {
+      "properties": {
+        "metric": {
+          "const": "event_sum_per_distance",
+          "default": "event_sum_per_distance",
+          "enum": [
+            "event_sum_per_distance"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "unit": {
+          "default": "km",
+          "oneOf": [
+            {
+              "const": "km",
+              "title": "Kilometers (km)"
+            },
+            {
+              "const": "m",
+              "title": "Meters (m)"
+            }
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "aggregate_column": {
+          "default": "",
+          "description": "Event details field whose values are totaled for this metric, using the field title shown in EarthRanger (for example \"Number of Animals\"). Leave blank to use the task-level Event Field to Sum.",
+          "title": "Event Field to Sum",
+          "type": "string"
+        }
+      },
+      "title": "Event Sum per Distance",
+      "type": "object"
+    },
+    "EventSumPerDurationMetric": {
+      "properties": {
+        "metric": {
+          "const": "event_sum_per_duration",
+          "default": "event_sum_per_duration",
+          "enum": [
+            "event_sum_per_duration"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "unit": {
+          "default": "h",
+          "oneOf": [
+            {
+              "const": "h",
+              "title": "Hours (h)"
+            },
+            {
+              "const": "d",
+              "title": "Days (d)"
+            }
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "aggregate_column": {
+          "default": "",
+          "description": "Event details field whose values are totaled for this metric, using the field title shown in EarthRanger (for example \"Number of Animals\"). Leave blank to use the task-level Event Field to Sum.",
+          "title": "Event Field to Sum",
+          "type": "string"
+        }
+      },
+      "title": "Event Sum per Duration",
+      "type": "object"
+    },
+    "EventsPerDistanceMetric": {
+      "properties": {
+        "metric": {
+          "const": "events_per_distance",
+          "default": "events_per_distance",
+          "enum": [
+            "events_per_distance"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "unit": {
+          "default": "km",
+          "oneOf": [
+            {
+              "const": "km",
+              "title": "Kilometers (km)"
+            },
+            {
+              "const": "m",
+              "title": "Meters (m)"
+            }
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "title": "Events per Distance",
+      "type": "object"
+    },
+    "EventsPerDurationMetric": {
+      "properties": {
+        "metric": {
+          "const": "events_per_duration",
+          "default": "events_per_duration",
+          "enum": [
+            "events_per_duration"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "unit": {
+          "default": "h",
+          "oneOf": [
+            {
+              "const": "h",
+              "title": "Hours (h)"
+            },
+            {
+              "const": "d",
+              "title": "Days (d)"
+            }
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "title": "Events per Duration",
+      "type": "object"
+    },
+    "EventsPerPatrolDayMetric": {
+      "description": "Rate against patrol days \u2014 distinct calendar days with patrol movement\n(nunique segment_start_date, matching PatrolDaysMetric).",
+      "properties": {
+        "metric": {
+          "const": "events_per_patrol_day",
+          "default": "events_per_patrol_day",
+          "enum": [
+            "events_per_patrol_day"
+          ],
+          "title": "Metric",
+          "type": "string"
+        }
+      },
+      "title": "Events per Patrol Day",
+      "type": "object"
+    },
+    "EventsPerPatrolMetric": {
+      "properties": {
+        "metric": {
+          "const": "events_per_patrol",
+          "default": "events_per_patrol",
+          "enum": [
+            "events_per_patrol"
+          ],
+          "title": "Metric",
+          "type": "string"
+        }
+      },
+      "title": "Events per Patrol",
+      "type": "object"
+    },
+    "MergedAreaCoveredMetric": {
+      "description": "Area covered with overlaps counted once \u2014 the distinct ground footprint.",
+      "properties": {
+        "metric": {
+          "const": "area_covered_merged",
+          "default": "area_covered_merged",
+          "enum": [
+            "area_covered_merged"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "swath_width_meters": {
+          "default": 500.0,
+          "description": "Full corridor width in meters.",
+          "title": "Swath Width (m)",
+          "type": "number"
+        }
+      },
+      "title": "Area Covered (Merged)",
+      "type": "object"
+    },
+    "PatrolCountMetric": {
+      "properties": {
+        "metric": {
+          "const": "patrol_count",
+          "default": "patrol_count",
+          "enum": [
+            "patrol_count"
+          ],
+          "title": "Metric",
+          "type": "string"
+        }
+      },
+      "title": "Patrol Count",
+      "type": "object"
+    },
+    "PatrolDaysMetric": {
+      "properties": {
+        "metric": {
+          "const": "patrol_days",
+          "default": "patrol_days",
+          "enum": [
+            "patrol_days"
+          ],
+          "title": "Metric",
+          "type": "string"
+        }
+      },
+      "title": "Patrol Days",
+      "type": "object"
+    },
+    "TotalDistanceMetric": {
+      "properties": {
+        "metric": {
+          "const": "total_distance",
+          "default": "total_distance",
+          "enum": [
+            "total_distance"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "unit": {
+          "default": "km",
+          "oneOf": [
+            {
+              "const": "km",
+              "title": "Kilometers (km)"
+            },
+            {
+              "const": "m",
+              "title": "Meters (m)"
+            }
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "title": "Total Distance",
+      "type": "object"
+    },
+    "TotalDurationMetric": {
+      "properties": {
+        "metric": {
+          "const": "total_duration",
+          "default": "total_duration",
+          "enum": [
+            "total_duration"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "unit": {
+          "default": "h",
+          "oneOf": [
+            {
+              "const": "h",
+              "title": "Hours (h)"
+            },
+            {
+              "const": "d",
+              "title": "Days (d)"
+            }
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "title": "Total Duration",
+      "type": "object"
+    },
+    "TotalEventSumMetric": {
+      "properties": {
+        "metric": {
+          "const": "total_event_sum",
+          "default": "total_event_sum",
+          "enum": [
+            "total_event_sum"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "aggregate_column": {
+          "default": "",
+          "description": "Event details field whose values are totaled for this metric, using the field title shown in EarthRanger (for example \"Number of Animals\"). Leave blank to use the task-level Event Field to Sum.",
+          "title": "Event Field to Sum",
+          "type": "string"
+        }
+      },
+      "title": "Total Event Sum",
+      "type": "object"
+    },
+    "TotalEventsMetric": {
+      "properties": {
+        "metric": {
+          "const": "total_events",
+          "default": "total_events",
+          "enum": [
+            "total_events"
+          ],
+          "title": "Metric",
+          "type": "string"
+        }
+      },
+      "title": "Total Events",
+      "type": "object"
+    },
+    "UnmergedAreaCoveredMetric": {
+      "description": "Area covered summed segment by segment \u2014 total patrol efforts.",
+      "properties": {
+        "metric": {
+          "const": "area_covered_unmerged",
+          "default": "area_covered_unmerged",
+          "enum": [
+            "area_covered_unmerged"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "swath_width_meters": {
+          "default": 500.0,
+          "description": "Full corridor width in meters.",
+          "title": "Swath Width (m)",
+          "type": "number"
+        }
+      },
+      "title": "Area Covered (Unmerged)",
+      "type": "object"
+    }
+  },
+  "uiSchema": {
+    "workflow_details": {
+      "ui:order": [
+        "name",
+        "description"
+      ]
+    },
+    "time_range": {
+      "ui:order": [
+        "since",
+        "until",
+        "timezone"
+      ]
+    },
+    "er_params": {
+      "ui:order": [
+        "patrol_types",
+        "event_types",
+        "status"
+      ]
+    },
+    "patrol_filters": {
+      "ui:order": [
+        "bounding_box",
+        "filter_point_coords",
+        "trajectory_segment_filter"
+      ]
+    },
+    "summary_metrics": {
+      "ui:order": [
+        "aggregation",
+        "metrics"
+      ]
+    },
+    "trend_chart": {
+      "ui:order": [
+        "time_interval",
+        "barmode"
+      ]
+    },
+    "ui:order": [
+      "workflow_details",
+      "er_client_name",
+      "time_range",
+      "er_params",
+      "patrol_filters",
+      "groupers",
+      "summary_metrics",
+      "chart_mode",
+      "trend_chart"
+    ]
+  },
+  "additionalProperties": false
+}

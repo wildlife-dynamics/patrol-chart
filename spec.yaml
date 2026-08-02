@@ -12,7 +12,7 @@ requirements:
   - name: ecoscope
     path: /Users/yunwu/MEP/wt-tasks/ecoscope
     editable: true
-    extras: ["platform", "mapping", "analysis"]
+    extras: ["platform", "mapping", "analysis", "plotting"]
   - name: lonboard
     version: "==0.0.8"
     channel: https://repo.prefix.dev/ecoscope-workflows/
