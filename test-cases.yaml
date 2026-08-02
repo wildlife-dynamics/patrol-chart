@@ -39,6 +39,8 @@ base:
       var: "month"
     barmode:
       var: "group"
+    trend_chart:
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
 
 event-sum-fields:
   name: Per-metric event fields
@@ -73,8 +75,8 @@ event-sum-fields:
       groupers: []
     summary_metrics:
       metrics:
-        - {metric: "total_event_sum", aggregate_column: "priority"}
-        - {metric: "event_sum_per_distance", unit: "km", aggregate_column: "serial_number"}
+        - {metric: "total_encounter", aggregate_column: "priority"}
+        - {metric: "encounters_per_distance", unit: "km", aggregate_column: "serial_number"}
         - {metric: "total_distance", unit: "km"}
     chart_mode:
       mode:
@@ -83,6 +85,8 @@ event-sum-fields:
       var: "month"
     barmode:
       var: "group"
+    trend_chart:
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
 
 week-interval:
   name: Week interval
@@ -111,7 +115,7 @@ week-interval:
     summary_metrics:
       metrics:
         - {metric: "patrol_days"}
-        - {metric: "events_per_patrol_day"}
+        - {metric: "encounters_per_patrol_day"}
     chart_mode:
       mode:
         mode: "metrics"
@@ -119,6 +123,8 @@ week-interval:
       var: "week"
     barmode:
       var: "group"
+    trend_chart:
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
 
 stacked:
   name: Stacked bars
@@ -155,6 +161,8 @@ stacked:
       var: "month"
     barmode:
       var: "stack"
+    trend_chart:
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
 
 category-mode:
   name: By Category (event type)
@@ -194,6 +202,8 @@ category-mode:
       var: "month"
     barmode:
       var: "stack"
+    trend_chart:
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
 
 spatial-mode:
   name: By Spatial Group
@@ -234,6 +244,8 @@ spatial-mode:
       var: "month"
     barmode:
       var: "group"
+    trend_chart:
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
 
 month-grouper:
   name: Month grouper
@@ -271,3 +283,5 @@ month-grouper:
       var: "week"
     barmode:
       var: "group"
+    trend_chart:
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]

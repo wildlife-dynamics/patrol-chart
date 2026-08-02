@@ -435,23 +435,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    summary_metrics = (
-        task(set_encounter_rate_metrics)
-        .validate()
-        .set_task_instance_id("summary_metrics")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(**(params.get("summary_metrics") or {}))
-        .call()
-    )
-
     chart_mode = (
         task(set_trend_chart_mode)
         .validate()
@@ -469,6 +452,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    summary_metrics = (
+        task(set_encounter_rate_metrics)
+        .validate()
+        .set_task_instance_id("summary_metrics")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("summary_metrics") or {}))
+        .call()
+    )
+
     time_interval = (
         task(set_string_var)
         .validate()
@@ -483,23 +483,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(**(params.get("time_interval") or {}))
-        .call()
-    )
-
-    barmode = (
-        task(set_string_var)
-        .validate()
-        .set_task_instance_id("barmode")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(**(params.get("barmode") or {}))
         .call()
     )
 
@@ -1077,6 +1060,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    barmode = (
+        task(set_string_var)
+        .validate()
+        .set_task_instance_id("barmode")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("barmode") or {}))
+        .call()
+    )
+
     trend_chart = (
         task(draw_time_series_bar_chart)
         .validate()
@@ -1098,26 +1098,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             agg_function=None,
             category=breakdown_category,
             summary_params=summary_metrics,
-            palette=[
-                "#FF9600",
-                "#F23B0E",
-                "#A100CB",
-                "#F04564",
-                "#03421A",
-                "#3089FF",
-                "#E26FFF",
-                "#8C1700",
-                "#002960",
-                "#FFD000",
-                "#B62879",
-                "#680078",
-                "#005A56",
-                "#0056C7",
-                "#331878",
-                "#E76826",
-            ],
             color_column=None,
-            plot_style=None,
+            plot_style={"texttemplate": "%{y:,.2~f}", "textposition": "auto"},
             layout_style=None,
             widget_id=set_chart_title,
             **(params.get("trend_chart") or {}),
