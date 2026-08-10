@@ -65,42 +65,30 @@ rjsf-overrides:
     "Filter Data.properties.patrol_filters.title": ""
 
     # --- Trend Chart: merged config card (set_trend_chart_config) ---
-    # Card field order comes from the task model: Metrics -> Time Interval ->
-    # Break Down By. Metric default (Patrol Count), the single-metric-per-
-    # breakdown form guard (config-level allOf maxItems) and the runtime
-    # validator all live in the TASK model — not restated here. The model
-    # compiles as a $ref into $defs/TrendChartConfig, so its workflow-specific
-    # restatements live in the $defs override section below; here we only
-    # blank the task heading and replace the field-level `default: null` so
-    # the form builds its initial value from the property defaults.
+    # Separate task params compile INLINE (round-4 lesson: a single-model
+    # param compiles as allOf-$ref into $defs, where the form resolves
+    # neither property defaults nor if/then conditionals — the effort-table
+    # aggregation pattern works because it is inline). Card field order =
+    # param order: Metrics (default Patrol Count) -> Time Interval (default
+    # Week) -> Compares. The runtime validator lives on the task's
+    # TrendChartConfig carrier.
     "Trend Chart.properties.trend_config.title": ""
-    "Trend Chart.properties.trend_config.properties.config.default": {}
-
-    # --- Styling card: merged style task (set_trend_chart_style). Chart
-    # Type / Bar Mode titles, the bar-only reveal of Bar Mode, and the
-    # custom-colors default all come from the task model ($defs/
-    # TrendChartStyle); only the palette union branches are restated (in
-    # $defs below) to curate the named colormap dropdown. ---
-    "Styling.properties.trend_style.title": ""
-    "Styling.properties.trend_style.properties.style.default": {}
-
-  $defs:
-    ValueGrouper:
-      title: "Category"
-      type: "object"
-      properties:
-        index_name:
-          title: "Index Name"
-          type: "string"
-          oneOf:
-            - const: "patrol_serial_number"
-              title: "Patrol Serial Number"
-            - const: "patrol_type"
-              title: "Patrol Type"
-            - const: "patrol_subject"
-              title: "Patrol Subject"
-
-    # The task emits the Break Down By union as a GENERIC flat allOf/if/then
+    # Form guard restated from the task library's _config_task_json_schema
+    # (moves to @register(json_schema_extra=...) once wt-registry > 0.2.2
+    # ships task-level extras): breakdown modes cap Metrics at one row, so
+    # the form blocks submission of multi-metric breakdowns.
+    "Trend Chart.properties.trend_config.allOf":
+      - if:
+          properties:
+            mode:
+              properties:
+                mode: {"enum": ["category", "spatial", "time"]}
+              required: ["mode"]
+          required: ["mode"]
+        then:
+          properties:
+            metrics: {"maxItems": 1}
+    # The task emits the Compares union as a GENERIC flat allOf/if/then
     # conditional (category is a plain string there). Override paths cannot
     # index into allOf/oneOf lists, so the whole `mode` object is restated
     # wholesale — supplying the workflow-specific category options and the
@@ -108,13 +96,13 @@ rjsf-overrides:
     # NOTE: the EarthRangerEnumResolver transform cannot target the
     # spatial_feature_group field (it lives inside the restated conditional) —
     # fallback is free-text entry with ui:help (see uiSchema below).
-    "TrendChartConfig.properties.mode":
+    "Trend Chart.properties.trend_config.properties.mode":
       type: "object"
       title: ""
       properties:
         mode:
           type: "string"
-          title: "Break Down By"
+          title: "Compares"
           default: "metrics"
           description: >-
             What each series represents: one series per metric (Metrics
@@ -159,7 +147,7 @@ rjsf-overrides:
             properties:
               unit:
                 type: "string"
-                title: "Compare"
+                title: "Period"
                 default: "year"
                 description: >-
                   One series per period of this size. The Time Interval above
@@ -171,9 +159,12 @@ rjsf-overrides:
                   - {"const": "week", "title": "Weeks"}
                   - {"const": "day", "title": "Days"}
 
-    # Curated named-colormap dropdown for the Color Map palette branch; the
-    # Custom Colors branch and its 16-hex default come from the task model.
-    "TrendChartStyle.properties.palette.anyOf":
+    # --- Styling card: merged style task (set_trend_chart_style). Chart
+    # Type + conditional Bar Mode come from the task's inline flat
+    # conditional; the custom-colors default from the task model. Only the
+    # palette union branches are restated, to curate the colormap dropdown. ---
+    "Styling.properties.trend_style.title": ""
+    "Styling.properties.trend_style.properties.palette.anyOf":
       - type: "string"
         title: "Color Map"
         oneOf:
@@ -189,14 +180,30 @@ rjsf-overrides:
         title: "Custom Colors"
         items: {"type": "string"}
 
+  $defs:
+    ValueGrouper:
+      title: "Category"
+      type: "object"
+      properties:
+        index_name:
+          title: "Index Name"
+          type: "string"
+          oneOf:
+            - const: "patrol_serial_number"
+              title: "Patrol Serial Number"
+            - const: "patrol_type"
+              title: "Patrol Type"
+            - const: "patrol_subject"
+              title: "Patrol Subject"
+
   uiSchema:
     Patrol and Event Types.er_params.patrol_types.items.ui:help: >-
       If you are on Ecoscope Desktop, "Patrol Type" values can be found in your
       EarthRanger Admin site under Activity → Patrol Types.
     Filter Data.patrol_filters.filter_point_coords.items.ui:options.label: false
-    # Spatial feature group inside the Break Down By union: enum resolver
+    # Spatial feature group inside the Compares union: enum resolver
     # cannot reach it (see note above) — manual entry with help text.
-    Trend Chart.trend_config.config.mode.spatial_feature_group.ui:help: >-
+    Trend Chart.trend_config.mode.spatial_feature_group.ui:help: >-
       Enter the spatial feature group name exactly as it appears in your
       EarthRanger site (Mapping → Spatial Feature Group Profiles).
     # Preset metric rows (patrol-effort-table pattern): per-branch uiSchema,
@@ -205,7 +212,7 @@ rjsf-overrides:
     # encounters_per_distance, encounters_per_duration, encounters_per_patrol,
     # encounters_per_patrol_day, patrol_count, patrol_days, total_distance,
     # total_duration, total_encounter, total_events.
-    "Trend Chart.trend_config.config.metrics.items.oneOf":
+    "Trend Chart.trend_config.metrics.items.oneOf":
       - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
       - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
       - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}

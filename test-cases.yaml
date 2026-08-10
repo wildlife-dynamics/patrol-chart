@@ -32,19 +32,18 @@ base:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "patrol_count"}
-          - {metric: "total_distance", unit: "km"}
-          - {metric: "total_events"}
-        time_interval: "month"
-        mode:
-          mode: "metrics"
+      metrics:
+        - {metric: "patrol_count"}
+        - {metric: "total_distance", unit: "km"}
+        - {metric: "total_events"}
+      time_interval: "month"
+      mode:
+        mode: "metrics"
     trend_style:
-      style:
+      chart:
         chart_type: "bar"
         barmode: "group"
-        palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
 
 event-sum-fields:
   name: Per-metric event fields
@@ -78,14 +77,13 @@ event-sum-fields:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "total_encounter", aggregate_column: "priority"}
-          - {metric: "encounters_per_distance", unit: "km", aggregate_column: "serial_number"}
-          - {metric: "total_distance", unit: "km"}
-        time_interval: "month"
-        mode:
-          mode: "metrics"
+      metrics:
+        - {metric: "total_encounter", aggregate_column: "priority"}
+        - {metric: "encounters_per_distance", unit: "km", aggregate_column: "serial_number"}
+        - {metric: "total_distance", unit: "km"}
+      time_interval: "month"
+      mode:
+        mode: "metrics"
 
 week-interval:
   name: Week interval
@@ -112,13 +110,12 @@ week-interval:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "patrol_days"}
-          - {metric: "encounters_per_patrol_day"}
-        time_interval: "week"
-        mode:
-          mode: "metrics"
+      metrics:
+        - {metric: "patrol_days"}
+        - {metric: "encounters_per_patrol_day"}
+      time_interval: "week"
+      mode:
+        mode: "metrics"
 
 stacked:
   name: Stacked bars
@@ -145,15 +142,14 @@ stacked:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "total_events"}
-          - {metric: "patrol_count"}
-        time_interval: "month"
-        mode:
-          mode: "metrics"
+      metrics:
+        - {metric: "total_events"}
+        - {metric: "patrol_count"}
+      time_interval: "month"
+      mode:
+        mode: "metrics"
     trend_style:
-      style:
+      chart:
         chart_type: "bar"
         barmode: "stack"
 
@@ -185,18 +181,17 @@ category-mode:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "total_events"}
-        time_interval: "month"
-        mode:
-          mode: "category"
-          category: "event_type_display"
+      metrics:
+        - {metric: "total_events"}
+      time_interval: "month"
+      mode:
+        mode: "category"
+        category: "event_type_display"
     trend_style:
-      style:
+      chart:
         chart_type: "bar"
         barmode: "stack"
-        palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
 
 spatial-mode:
   name: By Spatial Group
@@ -227,13 +222,12 @@ spatial-mode:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "patrol_count"}
-        time_interval: "month"
-        mode:
-          mode: "spatial"
-          spatial_feature_group: "SpatialGrouperTest"
+      metrics:
+        - {metric: "patrol_count"}
+      time_interval: "month"
+      mode:
+        mode: "spatial"
+        spatial_feature_group: "SpatialGrouperTest"
 
 month-grouper:
   name: Month grouper
@@ -261,13 +255,12 @@ month-grouper:
       groupers:
         - temporal_index: "%B"
     trend_config:
-      config:
-        metrics:
-          - {metric: "patrol_count"}
-          - {metric: "total_events"}
-        time_interval: "week"
-        mode:
-          mode: "metrics"
+      metrics:
+        - {metric: "patrol_count"}
+        - {metric: "total_events"}
+      time_interval: "week"
+      mode:
+        mode: "metrics"
 
 line-chart:
   name: Line chart
@@ -297,15 +290,14 @@ line-chart:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "patrol_count"}
-          - {metric: "total_events"}
-        time_interval: "week"
-        mode:
-          mode: "metrics"
+      metrics:
+        - {metric: "patrol_count"}
+        - {metric: "total_events"}
+      time_interval: "week"
+      mode:
+        mode: "metrics"
     trend_style:
-      style:
+      chart:
         chart_type: "line"
 
 named-palette:
@@ -336,18 +328,17 @@ named-palette:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "total_events"}
-        time_interval: "month"
-        mode:
-          mode: "category"
-          category: "event_type_display"
+      metrics:
+        - {metric: "total_events"}
+      time_interval: "month"
+      mode:
+        mode: "category"
+        category: "event_type_display"
     trend_style:
-      style:
+      chart:
         chart_type: "bar"
         barmode: "stack"
-        palette: "tab20b"
+      palette: "tab20b"
 
 time-mode:
   name: By Time (compare months)
@@ -377,10 +368,9 @@ time-mode:
     groupers:
       groupers: []
     trend_config:
-      config:
-        metrics:
-          - {metric: "patrol_count"}
-        time_interval: "day"
-        mode:
-          mode: "time"
-          unit: "month"
+      metrics:
+        - {metric: "patrol_count"}
+      time_interval: "day"
+      mode:
+        mode: "time"
+        unit: "month"
