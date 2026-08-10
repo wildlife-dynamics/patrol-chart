@@ -1,4 +1,11 @@
-# Test cases for patrol-trend-plot.
+# Test cases for patrol-trend-plot. Each description states exactly what the
+# case tests; every user-facing option appears in at least one case:
+#   chart types bar (base) / line (line-chart, time-mode); barmodes group
+#   (base, event-sum-fields, month-grouper) / stack (category-mode); palettes
+#   colormap (base, category-mode) / custom hex (line-chart); intervals week /
+#   month; all four Compares branches (metrics / category / spatial / time);
+#   Group Data groupers (month-grouper); per-metric aggregate columns
+#   (event-sum-fields).
 # All cases are mock-io (canned ER fixtures; er_asia/demo_patrol matches the
 # canned patrol data, SpatialGrouperTest the canned spatial feature group).
 # The `live` case (mep_dev, mock_io: false) is added in Phase 3 / publish.
@@ -10,10 +17,11 @@
 base:
   name: Base
   description: >-
-    Mocked IO — primary development case (no credentials needed). The trend
-    chart params mirror the FORM-DEFAULT submission (task defaults plus the
+    Tests the FORM-DEFAULT submission end to end (task defaults plus the
     rjsf-override defaults in spec.yaml): single Patrol Count metric, week
-    interval, Metrics Only, grouped bars, tab20b color map, status "done".
+    Time Interval, Metrics Only, grouped bars, tab20b color map, status
+    "done" — expect weekly chronological bars and a visible legend even
+    with a single series.
   mock_io: true
   params:
     workflow_details:
@@ -51,14 +59,14 @@ base:
 event-sum-fields:
   name: Per-metric event fields
   description: >-
-    Mocked IO — event-sum metrics with a per-metric aggregate column. The
-    canned patrol-events fixture has no event_details numeric fields, so the
-    display-names task is overridden (mock_io_overrides) with a fixture that
-    adds `number_of_animals` on the animal event types (Wildlife/Bird
-    Sighting, Injured Animal, Human Wildlife Contact; NA on Fire and
-    Poachers Camp — sums ignore NA). Two metric rows aggregate that column
-    (total + per-distance rate) next to a plain total-distance row.
-    trend_style omitted — exercises the style task defaults.
+    Tests per-metric event-field aggregation: two metric rows summing
+    number_of_animals (total + per-distance rate) beside a plain
+    total-distance row; the mock_io_overrides GeoParquet fixture injecting
+    that field on the four animal event types (NA on Fire/Poachers Camp —
+    sums skip NA; the canned fixture itself has no numeric event_details);
+    an omitted trend_style (style task defaults); and multi-series GROUPED
+    bars on a month axis — the group-overlap regression (bars must use
+    plotly auto-width, not the full-month width).
   mock_io: true
   mock_io_overrides:
     ecoscope.platform.tasks.io.get_event_type_display_names_from_events: dev/fixtures/event-display-names-number-of-animals.parquet
@@ -91,198 +99,15 @@ event-sum-fields:
       mode:
         mode: "metrics"
 
-stacked:
-  name: Stacked bars
-  description: Mocked IO — barmode stack with same-unit (count) metrics.
-  mock_io: true
-  params:
-    workflow_details:
-      name: "Patrol Trend Plot"
-      description: "Patrol metric trends over time as a bar chart."
-    er_client_name:
-      data_source:
-        name: "er_asia"
-    time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
-      timezone:
-        label: "UTC (UTC+00:00)"
-        tzCode: "UTC"
-        name: "(UTC+00:00) UTC"
-        utc: "+00:00"
-    er_params:
-      patrol_types: ["demo_patrol"]
-      event_types: []
-    groupers:
-      groupers: []
-    trend_config:
-      metrics:
-        - {metric: "total_events"}
-        - {metric: "patrol_count"}
-      time_interval: "month"
-      mode:
-        mode: "metrics"
-    trend_style:
-      chart:
-        chart_type: "bar"
-        barmode: "stack"
-
 category-mode:
   name: By Category (event type)
   description: >-
-    Mocked IO — Break Down By "Category": total events per bucket split into
-    stacked segments colored per event type display name (the patrols
-    events-by-type chart). Exactly one metric row (breakdown constraint).
-  mock_io: true
-  params:
-    workflow_details:
-      name: "Patrol Trend Plot"
-      description: "Patrol metric trends over time as a bar chart."
-    er_client_name:
-      data_source:
-        name: "er_asia"
-    time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
-      timezone:
-        label: "UTC (UTC+00:00)"
-        tzCode: "UTC"
-        name: "(UTC+00:00) UTC"
-        utc: "+00:00"
-    er_params:
-      patrol_types: ["demo_patrol"]
-      event_types: []
-    groupers:
-      groupers: []
-    trend_config:
-      metrics:
-        - {metric: "total_events"}
-      time_interval: "month"
-      mode:
-        mode: "category"
-        category: "event_type_display"
-    trend_style:
-      chart:
-        chart_type: "bar"
-        barmode: "stack"
-      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
-
-spatial-mode:
-  name: By Spatial Group
-  description: >-
-    Mocked IO — Break Down By "Spatial Group": patrol count per bucket, one
-    series per region. The mock get_spatial_features_group fixture returns
-    the "SpatialGrouperTest" group (Central/East/West regions) — the
-    resolver keys on metadata.display_name.
-  mock_io: true
-  params:
-    workflow_details:
-      name: "Patrol Trend Plot"
-      description: "Patrol metric trends over time as a bar chart."
-    er_client_name:
-      data_source:
-        name: "er_asia"
-    time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
-      timezone:
-        label: "UTC (UTC+00:00)"
-        tzCode: "UTC"
-        name: "(UTC+00:00) UTC"
-        utc: "+00:00"
-    er_params:
-      patrol_types: ["demo_patrol"]
-      event_types: []
-    groupers:
-      groupers: []
-    trend_config:
-      metrics:
-        - {metric: "patrol_count"}
-      time_interval: "month"
-      mode:
-        mode: "spatial"
-        spatial_feature_group: "SpatialGrouperTest"
-
-month-grouper:
-  name: Month grouper
-  description: >-
-    Temporal Group Data grouper → one trend chart per month view. Also
-    covers the patrol-day metrics (nunique of segment_start_date and the
-    per-patrol-day encounter rate) on week bucketing.
-  mock_io: true
-  params:
-    workflow_details:
-      name: "Patrol Trend Plot"
-      description: "Patrol metric trends over time as a bar chart."
-    er_client_name:
-      data_source:
-        name: "er_asia"
-    time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
-      timezone:
-        label: "UTC (UTC+00:00)"
-        tzCode: "UTC"
-        name: "(UTC+00:00) UTC"
-        utc: "+00:00"
-    er_params:
-      patrol_types: ["demo_patrol"]
-      event_types: []
-    groupers:
-      groupers:
-        - temporal_index: "%B"
-    trend_config:
-      metrics:
-        - {metric: "patrol_days"}
-        - {metric: "encounters_per_patrol_day"}
-      time_interval: "week"
-      mode:
-        mode: "metrics"
-
-line-chart:
-  name: Line chart
-  description: >-
-    Mocked IO — Chart Type "Line": the base metrics rendered as
-    lines+markers instead of bars (barmode ignored; bar value labels
-    stripped by the task).
-  mock_io: true
-  params:
-    workflow_details:
-      name: "Patrol Trend Plot"
-      description: "Patrol metric trends over time as a line chart."
-    er_client_name:
-      data_source:
-        name: "er_asia"
-    time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
-      timezone:
-        label: "UTC (UTC+00:00)"
-        tzCode: "UTC"
-        name: "(UTC+00:00) UTC"
-        utc: "+00:00"
-    er_params:
-      patrol_types: ["demo_patrol"]
-      event_types: []
-    groupers:
-      groupers: []
-    trend_config:
-      metrics:
-        - {metric: "patrol_count"}
-        - {metric: "total_events"}
-      time_interval: "week"
-      mode:
-        mode: "metrics"
-    trend_style:
-      chart:
-        chart_type: "line"
-
-named-palette:
-  name: Named colormap palette
-  description: >-
-    Mocked IO — Color Palette as a named matplotlib colormap string
-    ("tab20b", the patrols events colormap) instead of a hex list, cycled
-    over the event-type series of a Category breakdown.
+    Tests the Category breakdown (the patrols events-by-type chart): total
+    events split into one stacked segment per event_type_display value
+    (display-name resolution feeding the legend); STACKED month bars
+    keeping the full-month bar width; and a named color map ("tab20b")
+    sampled over the data-dependent series count. Single metric row — the
+    breakdown constraint.
   mock_io: true
   params:
     workflow_details:
@@ -317,13 +142,128 @@ named-palette:
         barmode: "stack"
       palette: "tab20b"
 
+spatial-mode:
+  name: By Spatial Group
+  description: >-
+    Tests the Spatial Group breakdown: the chart-mode spatial grouper
+    resolver against the canned "SpatialGrouperTest" feature group
+    (Central/East/West; the resolver keys on metadata.display_name), the
+    second spatial-index pass on both branches, and one series per region
+    from a single metric.
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Trend Plot"
+      description: "Patrol metric trends over time as a bar chart."
+    er_client_name:
+      data_source:
+        name: "er_asia"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "UTC (UTC+00:00)"
+        tzCode: "UTC"
+        name: "(UTC+00:00) UTC"
+        utc: "+00:00"
+    er_params:
+      patrol_types: ["demo_patrol"]
+      event_types: []
+    groupers:
+      groupers: []
+    trend_config:
+      metrics:
+        - {metric: "patrol_count"}
+      time_interval: "month"
+      mode:
+        mode: "spatial"
+        spatial_feature_group: "SpatialGrouperTest"
+
+month-grouper:
+  name: Month grouper
+  description: >-
+    Tests temporal Group Data grouping: a %B grouper splitting the run into
+    one chart per month view (split_groups → merge_widget_views); the
+    patrol-day metrics (patrol_days = nunique segment_start_date, and
+    encounters_per_patrol_day with its column-less "Total Events per Patrol
+    Day" label); and multi-series grouped bars on a week axis.
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Trend Plot"
+      description: "Patrol metric trends over time as a bar chart."
+    er_client_name:
+      data_source:
+        name: "er_asia"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "UTC (UTC+00:00)"
+        tzCode: "UTC"
+        name: "(UTC+00:00) UTC"
+        utc: "+00:00"
+    er_params:
+      patrol_types: ["demo_patrol"]
+      event_types: []
+    groupers:
+      groupers:
+        - temporal_index: "%B"
+    trend_config:
+      metrics:
+        - {metric: "patrol_days"}
+        - {metric: "encounters_per_patrol_day"}
+      time_interval: "week"
+      mode:
+        mode: "metrics"
+
+line-chart:
+  name: Line chart
+  description: >-
+    Tests the Line chart type in metrics mode: two metrics as lines+markers
+    (barmode and bar value labels stripped by the task), plus the Custom
+    Colors palette branch — the hex list cycled over the series.
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Trend Plot"
+      description: "Patrol metric trends over time as a line chart."
+    er_client_name:
+      data_source:
+        name: "er_asia"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "UTC (UTC+00:00)"
+        tzCode: "UTC"
+        name: "(UTC+00:00) UTC"
+        utc: "+00:00"
+    er_params:
+      patrol_types: ["demo_patrol"]
+      event_types: []
+    groupers:
+      groupers: []
+    trend_config:
+      metrics:
+        - {metric: "patrol_count"}
+        - {metric: "total_events"}
+      time_interval: "week"
+      mode:
+        mode: "metrics"
+    trend_style:
+      chart:
+        chart_type: "line"
+      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
+
 time-mode:
   name: By Time (compare months)
   description: >-
-    Mocked IO — Break Down By "Time" as a LINE chart: patrol count per week,
-    one line per month (the canned Jan–Feb 2015 range yields two series),
-    overlaid on the integer week-of-period axis (week 1 = the first 7 days
-    of each month) so the week indices align across months.
+    Tests the Time breakdown as a LINE chart: patrol count per week
+    compared across months (one line per month; the canned range yields
+    Jan/Feb plus a March trajectory spillover), with weeks bucketed
+    relative to each period's start on the integer "Week 1..N" axis so the
+    week indices align across months.
   mock_io: true
   params:
     workflow_details:
