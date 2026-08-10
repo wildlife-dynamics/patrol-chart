@@ -64,37 +64,67 @@ rjsf-overrides:
     # --- Filter Data: hide the task sub-heading ---
     "Filter Data.properties.patrol_filters.title": ""
 
-    # --- Trend Chart: metric picker ---
-    "Trend Chart.properties.summary_metrics.title": ""
-    "Trend Chart.properties.summary_metrics.properties.metrics.title": "Metrics"
-    "Trend Chart.properties.summary_metrics.properties.metrics.default":
-      - {"metric": "total_events"}
-    "Trend Chart.properties.summary_metrics.properties.metrics.description": >-
-      Metrics shown in the trend chart. In "By Category" and "By Spatial
-      Group" chart modes keep exactly ONE metric row.
+    # --- Trend Chart: merged config card (set_trend_chart_config) ---
+    # Card field order comes from the task model: Metrics -> Time Interval ->
+    # Break Down By. Metric default (Patrol Count), the single-metric-per-
+    # breakdown form guard (config-level allOf maxItems) and the runtime
+    # validator all live in the TASK model — not restated here. The model
+    # compiles as a $ref into $defs/TrendChartConfig, so its workflow-specific
+    # restatements live in the $defs override section below; here we only
+    # blank the task heading and replace the field-level `default: null` so
+    # the form builds its initial value from the property defaults.
+    "Trend Chart.properties.trend_config.title": ""
+    "Trend Chart.properties.trend_config.properties.config.default": {}
 
-    # --- Trend Chart: Chart Mode (discriminated union) ---
-    "Trend Chart.properties.chart_mode.title": ""
-    # The task emits a GENERIC flat allOf/if/then conditional object (category
-    # is a plain string there). Override paths cannot index into allOf/oneOf
-    # lists, so the whole `mode` object is restated wholesale here — supplying
-    # the workflow-specific category options and the form-only category
-    # default (the task model deliberately has neither).
-    "Trend Chart.properties.chart_mode.properties.mode":
+    # --- Styling card: merged style task (set_trend_chart_style). Chart
+    # Type / Bar Mode titles, the bar-only reveal of Bar Mode, and the
+    # custom-colors default all come from the task model ($defs/
+    # TrendChartStyle); only the palette union branches are restated (in
+    # $defs below) to curate the named colormap dropdown. ---
+    "Styling.properties.trend_style.title": ""
+    "Styling.properties.trend_style.properties.style.default": {}
+
+  $defs:
+    ValueGrouper:
+      title: "Category"
+      type: "object"
+      properties:
+        index_name:
+          title: "Index Name"
+          type: "string"
+          oneOf:
+            - const: "patrol_serial_number"
+              title: "Patrol Serial Number"
+            - const: "patrol_type"
+              title: "Patrol Type"
+            - const: "patrol_subject"
+              title: "Patrol Subject"
+
+    # The task emits the Break Down By union as a GENERIC flat allOf/if/then
+    # conditional (category is a plain string there). Override paths cannot
+    # index into allOf/oneOf lists, so the whole `mode` object is restated
+    # wholesale — supplying the workflow-specific category options and the
+    # form-only category default (the task model deliberately has neither).
+    # NOTE: the EarthRangerEnumResolver transform cannot target the
+    # spatial_feature_group field (it lives inside the restated conditional) —
+    # fallback is free-text entry with ui:help (see uiSchema below).
+    "TrendChartConfig.properties.mode":
       type: "object"
       title: ""
       properties:
         mode:
           type: "string"
-          title: "Chart Mode"
+          title: "Break Down By"
           default: "metrics"
           description: >-
-            What each bar series represents: one series per metric, or one
-            series per category value / spatial region (single metric).
+            What each series represents: one series per metric (Metrics
+            Only), or the single metric split into one series per category
+            value, spatial region, or time period.
           oneOf:
-            - {"const": "metrics", "title": "Multiple Metrics"}
-            - {"const": "category", "title": "By Category"}
-            - {"const": "spatial", "title": "By Spatial Group"}
+            - {"const": "metrics", "title": "Metrics Only"}
+            - {"const": "category", "title": "Category"}
+            - {"const": "spatial", "title": "Spatial Group"}
+            - {"const": "time", "title": "Time"}
       allOf:
         - if:
             properties:
@@ -122,80 +152,60 @@ rjsf-overrides:
                 description: >-
                   The EarthRanger spatial feature group whose regions split
                   the metric into series.
-    # NOTE: the EarthRangerEnumResolver transform cannot target the
-    # spatial_feature_group field (it lives inside the restated conditional) —
-    # fallback is free-text entry with ui:help (see uiSchema below).
+        - if:
+            properties:
+              mode: {"const": "time"}
+          then:
+            properties:
+              unit:
+                type: "string"
+                title: "Compare"
+                default: "year"
+                description: >-
+                  One series per period of this size. The Time Interval above
+                  must be smaller than the period compared here — e.g. a
+                  Month interval to compare Years.
+                oneOf:
+                  - {"const": "year", "title": "Years"}
+                  - {"const": "month", "title": "Months"}
+                  - {"const": "week", "title": "Weeks"}
+                  - {"const": "day", "title": "Days"}
 
-    # --- Trend Chart: Time Interval (set_string_var config task) ---
-    "Trend Chart.properties.time_interval.title": ""
-    "Trend Chart.properties.time_interval.properties.var.title": "Time Interval"
-    "Trend Chart.properties.time_interval.properties.var.default": "month"
-    "Trend Chart.properties.time_interval.properties.var.oneOf":
-      - {"const": "year", "title": "Year"}
-      - {"const": "month", "title": "Month"}
-      - {"const": "week", "title": "Week"}
-      - {"const": "day", "title": "Day"}
-      - {"const": "hour", "title": "Hour"}
-    "Trend Chart.properties.time_interval.properties.var.description": >-
-      Choose the time interval for the x-axis to control how metrics are
-      summarized over time.
-
-    # --- Styling card: Bar Mode (set_string_var) + the chart instance's
-    # Color Palette. The chart group has its own unique title, so it may
-    # bear fields without clobbering the Trend Chart card. ---
-    "Styling.properties.barmode.title": ""
-    "Styling.properties.barmode.properties.var.title": "Bar Mode"
-    "Styling.properties.barmode.properties.var.default": "group"
-    "Styling.properties.barmode.properties.var.oneOf":
-      - {"const": "group", "title": "Grouped"}
-      - {"const": "stack", "title": "Stacked"}
-    "Styling.properties.barmode.properties.var.description": >-
-      Grouped shows series side by side; Stacked piles them up (best when all
-      series share a unit).
-    "Styling.properties.trend_chart.title": ""
-    "Styling.properties.trend_chart.properties.palette.title": "Color Palette"
-    "Styling.properties.trend_chart.properties.palette.description": >-
-      Colors cycled across the bar series, in order.
-    "Styling.properties.trend_chart.properties.palette.ecoscope:advanced": false
-    "Styling.properties.trend_chart.properties.palette.default": ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
-
-  $defs:
-    ValueGrouper:
-      title: "Category"
-      type: "object"
-      properties:
-        index_name:
-          title: "Index Name"
-          type: "string"
-          oneOf:
-            - const: "patrol_serial_number"
-              title: "Patrol Serial Number"
-            - const: "patrol_type"
-              title: "Patrol Type"
-            - const: "patrol_subject"
-              title: "Patrol Subject"
+    # Curated named-colormap dropdown for the Color Map palette branch; the
+    # Custom Colors branch and its 16-hex default come from the task model.
+    "TrendChartStyle.properties.palette.anyOf":
+      - type: "string"
+        title: "Color Map"
+        oneOf:
+          - {"const": "tab10", "title": "Tab10"}
+          - {"const": "tab20", "title": "Tab20"}
+          - {"const": "tab20b", "title": "Tab20b"}
+          - {"const": "Set2", "title": "Set2"}
+          - {"const": "Dark2", "title": "Dark2"}
+          - {"const": "Paired", "title": "Paired"}
+          - {"const": "viridis", "title": "Viridis"}
+          - {"const": "plasma", "title": "Plasma"}
+      - type: "array"
+        title: "Custom Colors"
+        items: {"type": "string"}
 
   uiSchema:
     Patrol and Event Types.er_params.patrol_types.items.ui:help: >-
       If you are on Ecoscope Desktop, "Patrol Type" values can be found in your
       EarthRanger Admin site under Activity → Patrol Types.
     Filter Data.patrol_filters.filter_point_coords.items.ui:options.label: false
-    # Spatial feature group inside the Chart Mode union: enum resolver cannot
-    # reach it (see note above) — manual entry with help text.
-    Trend Chart.chart_mode.mode.spatial_feature_group.ui:help: >-
+    # Spatial feature group inside the Break Down By union: enum resolver
+    # cannot reach it (see note above) — manual entry with help text.
+    Trend Chart.trend_config.config.mode.spatial_feature_group.ui:help: >-
       Enter the spatial feature group name exactly as it appears in your
       EarthRanger site (Mapping → Spatial Feature Group Profiles).
-    # Task-level "Measure Encounters By" (aggregation) is superseded by the
-    # per-metric Event Field to Sum — hide its inner select (the conditional
-    # column field then never reveals; the object header is already blank).
-    Trend Chart.summary_metrics.aggregation.count_or_sum.ui:widget: hidden
     # Preset metric rows (patrol-effort-table pattern): per-branch uiSchema,
     # one entry per union member IN UNION ORDER (alphabetical by title):
     # area_covered_merged, area_covered_unmerged, custom,
     # encounters_per_distance, encounters_per_duration, encounters_per_patrol,
     # encounters_per_patrol_day, patrol_count, patrol_days, total_distance,
     # total_duration, total_encounter, total_events.
-    "Trend Chart.summary_metrics.metrics.items.oneOf":
+    "Trend Chart.trend_config.config.metrics.items.oneOf":
       - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
       - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
       - {"ui:options": {"label": false}, "metric": {"ui:widget": "hidden"}}
@@ -355,42 +365,51 @@ workflow:
       var: "Patrol Trend"
 
   # ---------- Trend Chart config (user-facing card) ----------
-  # Card field order = task order: Metrics rows, then Chart Mode, then the
-  # chart's Time Interval + Bar Mode (from the trend_chart instance below,
-  # same card title).
+  # One merged config task = the whole card. Field order comes from the task
+  # model: Metrics rows, then Time Interval, then Break Down By (Metrics
+  # Only / Category / Spatial Group / Time). The model's schema-level allOf
+  # blocks form submission of multi-metric breakdowns and its validator
+  # enforces the same rule (plus interval-finer-than-period) at runtime.
   - title: Trend Chart
     type: task-group
     description: >-
-      Configure the patrol trend bar chart: pick the metrics, what each bar
-      series represents, the time interval for the x-axis, and grouped or
-      stacked bars.
+      Configure the patrol trend chart: pick the metrics, the time interval
+      for the x-axis, and what each series represents.
     tasks:
-      - name: Chart Mode
-        id: chart_mode
-        task: set_trend_chart_mode
+      - name: Trend Chart Configuration
+        id: trend_config
+        task: set_trend_chart_config
 
-      - name: Metrics
-        id: summary_metrics
-        task: set_encounter_rate_metrics
+  # Config splitters — all inputs via partial, so no form fields.
+  - name: Split Metrics
+    id: summary_metrics
+    task: get_trend_chart_metrics
+    partial:
+      config: ${{ workflow.trend_config.return }}
 
-      # Time Interval lives here (not on the chart instance) so the chart's
-      # group can stay separate — in-card field order = task order.
-      - name: Time Interval
-        id: time_interval
-        task: set_string_var
+  - name: Split Time Interval
+    id: time_interval
+    task: get_trend_chart_time_interval
+    partial:
+      config: ${{ workflow.trend_config.return }}
 
-  # Chart-mode splitters — all inputs via partial, so no form fields.
   - name: Split Breakdown Category
     id: breakdown_category
     task: get_chart_mode_category_column
     partial:
-      mode: ${{ workflow.chart_mode.return }}
+      config: ${{ workflow.trend_config.return }}
+
+  - name: Split Breakdown Time Unit
+    id: breakdown_time_unit
+    task: get_chart_mode_time_unit
+    partial:
+      config: ${{ workflow.trend_config.return }}
 
   - name: Split Breakdown Spatial Groupers
     id: breakdown_spatial_groupers
     task: get_chart_mode_spatial_groupers
     partial:
-      mode: ${{ workflow.chart_mode.return }}
+      config: ${{ workflow.trend_config.return }}
 
   # Resolve the breakdown spatial feature group (empty list -> no-ops).
   - task: extract_spatial_grouper_feature_group_names
@@ -647,40 +666,63 @@ workflow:
       groupers: ${{ workflow.resolved_groupers.return }}
 
   # ---------- Styling card + Trend Chart instance (per dashboard view) ----------
-  # Metric computation happens inside the chart task (metric mode). category
-  # comes from the Chart Mode splitter: None (one series per metric), a
-  # category column, or a SpatialGrouper_<group> index level (one series per
-  # value; single metric enforced by the task). Bar Mode (set_string_var) and
-  # the chart's own Color Palette are the card's fields; bar value labels are
-  # always on via plot_style texttemplate.
+  # One merged style task = the whole card: Chart Type (Bar/Line), Bar Mode
+  # (revealed only for Bar via the task model's conditional) and the Color
+  # Palette union (named color map | custom hex colors, custom default).
   - title: Styling
     type: task-group
-    description: "Style the trend chart bars."
+    description: "Style the trend chart."
     tasks:
-      - name: Bar Mode
-        id: barmode
-        task: set_string_var
+      - name: Styling
+        id: trend_style
+        task: set_trend_chart_style
 
-      - name: null
-        id: trend_chart
-        task: draw_time_series_bar_chart
-        partial:
-          x_axis: trend_time
-          time_interval: ${{ workflow.time_interval.return }}
-          barmode: ${{ workflow.barmode.return }}
-          y_axis: null
-          agg_function: null
-          category: ${{ workflow.breakdown_category.return }}
-          summary_params: ${{ workflow.summary_metrics.return }}
-          color_column: null
-          plot_style:
-            texttemplate: "%{y:,.2~f}"
-            textposition: "auto"
-          layout_style: null
-          widget_id: ${{ workflow.set_chart_title.return }}
-        mapvalues:
-          argnames: dataframe
-          argvalues: ${{ workflow.split_combined.return }}
+  # Style splitters — all inputs via partial, so no form fields.
+  - name: Split Chart Type
+    id: chart_type
+    task: get_style_chart_type
+    partial:
+      style: ${{ workflow.trend_style.return }}
+
+  - name: Split Bar Mode
+    id: barmode
+    task: get_style_barmode
+    partial:
+      style: ${{ workflow.trend_style.return }}
+
+  - name: Split Color Palette
+    id: palette
+    task: get_style_palette
+    partial:
+      style: ${{ workflow.trend_style.return }}
+
+  # Metric computation happens inside the chart task. category comes from
+  # the Break Down By splitter: None (one series per metric), a category
+  # column, or a SpatialGrouper_<group> index level; time_breakdown turns
+  # the chart into a period-over-period overlay (single metric enforced by
+  # the task in every breakdown). Fully partialed — no form fields; bar
+  # value labels are always on via plot_style texttemplate (stripped for
+  # line charts by the task).
+  - name: Draw Trend Chart
+    id: trend_chart
+    task: draw_time_series_chart
+    partial:
+      x_axis: trend_time
+      time_interval: ${{ workflow.time_interval.return }}
+      summary_params: ${{ workflow.summary_metrics.return }}
+      category: ${{ workflow.breakdown_category.return }}
+      time_breakdown: ${{ workflow.breakdown_time_unit.return }}
+      chart_type: ${{ workflow.chart_type.return }}
+      barmode: ${{ workflow.barmode.return }}
+      palette: ${{ workflow.palette.return }}
+      plot_style:
+        texttemplate: "%{y:,.2~f}"
+        textposition: "auto"
+      layout_style: null
+      widget_id: ${{ workflow.set_chart_title.return }}
+    mapvalues:
+      argnames: dataframe
+      argvalues: ${{ workflow.split_combined.return }}
 
   - name: Persist Trend Chart
     id: trend_chart_html

@@ -2,9 +2,6 @@
 import os
 from typing import Any
 
-from ecoscope.platform.tasks.analysis import (
-    set_encounter_rate_metrics as set_encounter_rate_metrics,
-)
 from ecoscope.platform.tasks.config import get_bounding_box as get_bounding_box
 from ecoscope.platform.tasks.config import (
     get_chart_mode_category_column as get_chart_mode_category_column,
@@ -13,12 +10,29 @@ from ecoscope.platform.tasks.config import (
     get_chart_mode_spatial_groupers as get_chart_mode_spatial_groupers,
 )
 from ecoscope.platform.tasks.config import (
+    get_chart_mode_time_unit as get_chart_mode_time_unit,
+)
+from ecoscope.platform.tasks.config import (
     get_filter_point_coords as get_filter_point_coords,
 )
 from ecoscope.platform.tasks.config import get_segment_filter as get_segment_filter
+from ecoscope.platform.tasks.config import get_style_barmode as get_style_barmode
+from ecoscope.platform.tasks.config import get_style_chart_type as get_style_chart_type
+from ecoscope.platform.tasks.config import get_style_palette as get_style_palette
+from ecoscope.platform.tasks.config import (
+    get_trend_chart_metrics as get_trend_chart_metrics,
+)
+from ecoscope.platform.tasks.config import (
+    get_trend_chart_time_interval as get_trend_chart_time_interval,
+)
 from ecoscope.platform.tasks.config import set_string_var as set_string_var
 from ecoscope.platform.tasks.config import set_traj_filters as set_traj_filters
-from ecoscope.platform.tasks.config import set_trend_chart_mode as set_trend_chart_mode
+from ecoscope.platform.tasks.config import (
+    set_trend_chart_config as set_trend_chart_config,
+)
+from ecoscope.platform.tasks.config import (
+    set_trend_chart_style as set_trend_chart_style,
+)
 from ecoscope.platform.tasks.config import set_workflow_details as set_workflow_details
 from ecoscope.platform.tasks.filter import (
     get_timezone_from_time_range as get_timezone_from_time_range,
@@ -53,7 +67,7 @@ from ecoscope.platform.tasks.results import (
     create_plot_widget_single_view as create_plot_widget_single_view,
 )
 from ecoscope.platform.tasks.results import (
-    draw_time_series_bar_chart as draw_time_series_bar_chart,
+    draw_time_series_chart as draw_time_series_chart,
 )
 from ecoscope.platform.tasks.results import gather_dashboard as gather_dashboard
 from ecoscope.platform.tasks.results import merge_widget_views as merge_widget_views
@@ -435,10 +449,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    chart_mode = (
-        task(set_trend_chart_mode)
+    trend_config = (
+        task(set_trend_chart_config)
         .validate()
-        .set_task_instance_id("chart_mode")
+        .set_task_instance_id("trend_config")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -448,12 +462,12 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("chart_mode") or {}))
+        .partial(**(params.get("trend_config") or {}))
         .call()
     )
 
     summary_metrics = (
-        task(set_encounter_rate_metrics)
+        task(get_trend_chart_metrics)
         .validate()
         .set_task_instance_id("summary_metrics")
         .handle_errors()
@@ -465,12 +479,12 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("summary_metrics") or {}))
+        .partial(config=trend_config, **(params.get("summary_metrics") or {}))
         .call()
     )
 
     time_interval = (
-        task(set_string_var)
+        task(get_trend_chart_time_interval)
         .validate()
         .set_task_instance_id("time_interval")
         .handle_errors()
@@ -482,7 +496,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("time_interval") or {}))
+        .partial(config=trend_config, **(params.get("time_interval") or {}))
         .call()
     )
 
@@ -499,7 +513,24 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(mode=chart_mode, **(params.get("breakdown_category") or {}))
+        .partial(config=trend_config, **(params.get("breakdown_category") or {}))
+        .call()
+    )
+
+    breakdown_time_unit = (
+        task(get_chart_mode_time_unit)
+        .validate()
+        .set_task_instance_id("breakdown_time_unit")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(config=trend_config, **(params.get("breakdown_time_unit") or {}))
         .call()
     )
 
@@ -516,7 +547,9 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(mode=chart_mode, **(params.get("breakdown_spatial_groupers") or {}))
+        .partial(
+            config=trend_config, **(params.get("breakdown_spatial_groupers") or {})
+        )
         .call()
     )
 
@@ -1060,8 +1093,42 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    trend_style = (
+        task(set_trend_chart_style)
+        .validate()
+        .set_task_instance_id("trend_style")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("trend_style") or {}))
+        .call()
+    )
+
+    chart_type = (
+        task(get_style_chart_type)
+        .validate()
+        .set_task_instance_id("chart_type")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(style=trend_style, **(params.get("chart_type") or {}))
+        .call()
+    )
+
     barmode = (
-        task(set_string_var)
+        task(get_style_barmode)
         .validate()
         .set_task_instance_id("barmode")
         .handle_errors()
@@ -1073,12 +1140,29 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("barmode") or {}))
+        .partial(style=trend_style, **(params.get("barmode") or {}))
+        .call()
+    )
+
+    palette = (
+        task(get_style_palette)
+        .validate()
+        .set_task_instance_id("palette")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(style=trend_style, **(params.get("palette") or {}))
         .call()
     )
 
     trend_chart = (
-        task(draw_time_series_bar_chart)
+        task(draw_time_series_chart)
         .validate()
         .set_task_instance_id("trend_chart")
         .handle_errors()
@@ -1093,12 +1177,12 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             x_axis="trend_time",
             time_interval=time_interval,
-            barmode=barmode,
-            y_axis=None,
-            agg_function=None,
-            category=breakdown_category,
             summary_params=summary_metrics,
-            color_column=None,
+            category=breakdown_category,
+            time_breakdown=breakdown_time_unit,
+            chart_type=chart_type,
+            barmode=barmode,
+            palette=palette,
             plot_style={"texttemplate": "%{y:,.2~f}", "textposition": "auto"},
             layout_style=None,
             widget_id=set_chart_title,
