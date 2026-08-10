@@ -678,9 +678,11 @@ workflow:
       groupers: ${{ workflow.resolved_groupers.return }}
 
   # ---------- Styling card + Trend Chart instance (per dashboard view) ----------
-  # One merged style task = the whole card: Chart Type (Bar/Line), Bar Mode
-  # (revealed only for Bar via the task model's conditional) and the Color
-  # Palette union (named color map | custom hex colors, custom default).
+  # One merged style task = the whole card: Chart Type (Bar/Line), the
+  # conditional branch options (Bar: Bar Mode + Show Value Labels; Line:
+  # Line Shape + Line Style + Show Markers — revealed via the task model's
+  # flat conditional), the Color Palette union (named color map | custom
+  # hex colors) and the optional Y-Axis Title.
   - title: Styling
     type: task-group
     description: "Style the trend chart."
@@ -708,13 +710,28 @@ workflow:
     partial:
       style: ${{ workflow.trend_style.return }}
 
+  # Composing splitters: trace styling (bar value labels / line shape, dash,
+  # markers) and layout styling (y-axis title) as PlotStyle / BarLayoutStyle
+  # for the chart's advanced inputs.
+  - name: Split Plot Style
+    id: plot_style
+    task: get_style_plot_style
+    partial:
+      style: ${{ workflow.trend_style.return }}
+
+  - name: Split Layout Style
+    id: layout_style
+    task: get_style_layout_style
+    partial:
+      style: ${{ workflow.trend_style.return }}
+
   # Metric computation happens inside the chart task. category comes from
   # the Break Down By splitter: None (one series per metric), a category
   # column, or a SpatialGrouper_<group> index level; time_breakdown turns
   # the chart into a period-over-period overlay (single metric enforced by
-  # the task in every breakdown). Fully partialed — no form fields; bar
-  # value labels are always on via plot_style texttemplate (stripped for
-  # line charts by the task).
+  # the task in every breakdown). Fully partialed — no form fields; trace
+  # and layout styling (value labels, line shape/dash/markers, y-axis
+  # title) come composed from the Styling card via the style splitters.
   - name: Draw Trend Chart
     id: trend_chart
     task: draw_time_series_chart
@@ -727,10 +744,8 @@ workflow:
       chart_type: ${{ workflow.chart_type.return }}
       barmode: ${{ workflow.barmode.return }}
       palette: ${{ workflow.palette.return }}
-      plot_style:
-        texttemplate: "%{y:,.2~f}"
-        textposition: "auto"
-      layout_style: null
+      plot_style: ${{ workflow.plot_style.return }}
+      layout_style: ${{ workflow.layout_style.return }}
       widget_id: ${{ workflow.set_chart_title.return }}
     mapvalues:
       argnames: dataframe

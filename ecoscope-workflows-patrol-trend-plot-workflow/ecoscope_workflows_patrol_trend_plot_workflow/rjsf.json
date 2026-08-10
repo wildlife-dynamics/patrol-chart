@@ -573,6 +573,67 @@
                             "title": "Stacked"
                           }
                         ]
+                      },
+                      "show_value_labels": {
+                        "type": "boolean",
+                        "title": "Show Value Labels",
+                        "default": true,
+                        "description": "Print the value on each bar."
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "chart_type": {
+                        "const": "line"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "line_shape": {
+                        "type": "string",
+                        "title": "Line Shape",
+                        "default": "linear",
+                        "description": "Straight segments between points, or a smoothed curve.",
+                        "oneOf": [
+                          {
+                            "const": "linear",
+                            "title": "Straight"
+                          },
+                          {
+                            "const": "spline",
+                            "title": "Smooth"
+                          }
+                        ]
+                      },
+                      "line_dash": {
+                        "type": "string",
+                        "title": "Line Style",
+                        "default": "solid",
+                        "description": "Draw the lines solid, dashed or dotted.",
+                        "oneOf": [
+                          {
+                            "const": "solid",
+                            "title": "Solid"
+                          },
+                          {
+                            "const": "dash",
+                            "title": "Dashed"
+                          },
+                          {
+                            "const": "dot",
+                            "title": "Dotted"
+                          }
+                        ]
+                      },
+                      "show_markers": {
+                        "type": "boolean",
+                        "title": "Show Markers",
+                        "default": true,
+                        "description": "Mark each data point on the line."
                       }
                     }
                   }
@@ -630,6 +691,12 @@
               "default": "tab20b",
               "title": "Color Palette",
               "description": "Series colors: a named color map, or your own colors cycled in series order."
+            },
+            "y_axis_title": {
+              "default": "",
+              "title": "Y-Axis Title",
+              "type": "string",
+              "description": "Optional label for the value axis. Leave empty for no label."
             }
           },
           "type": "object",
@@ -1482,7 +1549,8 @@
       "trend_style": {
         "ui:order": [
           "chart",
-          "palette"
+          "palette",
+          "y_axis_title"
         ]
       }
     },

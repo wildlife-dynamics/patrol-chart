@@ -5,7 +5,9 @@
 #   colormap (base, category-mode) / custom hex (line-chart); intervals week /
 #   month; all four Compares branches (metrics / category / spatial / time);
 #   Group Data groupers (month-grouper); per-metric aggregate columns
-#   (event-sum-fields).
+#   (event-sum-fields); bar value labels on (base, defaults) / off
+#   (category-mode); line shape/style/markers styled (line-chart) / defaults
+#   (time-mode); y-axis title set (line-chart) / empty (all others).
 # All cases are mock-io (canned ER fixtures; er_asia/demo_patrol matches the
 # canned patrol data, SpatialGrouperTest the canned spatial feature group).
 # The `live` case (mep_dev, mock_io: false) is added in Phase 3 / publish.
@@ -105,8 +107,9 @@ category-mode:
     Tests the Category breakdown (the patrols events-by-type chart): total
     events split into one stacked segment per event_type_display value
     (display-name resolution feeding the legend); STACKED month bars
-    keeping the full-month bar width; and a named color map ("tab20b")
-    sampled over the data-dependent series count. Single metric row — the
+    keeping the full-month bar width; bar value labels turned OFF (no
+    texttemplate on the traces); and a named color map ("tab20b") sampled
+    over the data-dependent series count. Single metric row — the
     breakdown constraint.
   mock_io: true
   params:
@@ -140,6 +143,7 @@ category-mode:
       chart:
         chart_type: "bar"
         barmode: "stack"
+        show_value_labels: false
       palette: "tab20b"
 
 spatial-mode:
@@ -220,9 +224,11 @@ month-grouper:
 line-chart:
   name: Line chart
   description: >-
-    Tests the Line chart type in metrics mode: two metrics as lines+markers
-    (barmode and bar value labels stripped by the task), plus the Custom
-    Colors palette branch — the hex list cycled over the series.
+    Tests the Line chart type in metrics mode with every line style option
+    set off-default: SMOOTH (spline) DASHED lines with markers hidden
+    (mode "lines"; barmode and bar value labels don't apply), a y-axis
+    title on the layout, plus the Custom Colors palette branch — the hex
+    list cycled over the series.
   mock_io: true
   params:
     workflow_details:
@@ -254,7 +260,11 @@ line-chart:
     trend_style:
       chart:
         chart_type: "line"
+        line_shape: "spline"
+        line_dash: "dash"
+        show_markers: false
       palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
+      y_axis_title: "Count"
 
 time-mode:
   name: By Time (compare months)

@@ -18,7 +18,11 @@ from ecoscope.platform.tasks.config import (
 from ecoscope.platform.tasks.config import get_segment_filter as get_segment_filter
 from ecoscope.platform.tasks.config import get_style_barmode as get_style_barmode
 from ecoscope.platform.tasks.config import get_style_chart_type as get_style_chart_type
+from ecoscope.platform.tasks.config import (
+    get_style_layout_style as get_style_layout_style,
+)
 from ecoscope.platform.tasks.config import get_style_palette as get_style_palette
+from ecoscope.platform.tasks.config import get_style_plot_style as get_style_plot_style
 from ecoscope.platform.tasks.config import (
     get_trend_chart_metrics as get_trend_chart_metrics,
 )
@@ -1161,6 +1165,40 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    plot_style = (
+        task(get_style_plot_style)
+        .validate()
+        .set_task_instance_id("plot_style")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(style=trend_style, **(params.get("plot_style") or {}))
+        .call()
+    )
+
+    layout_style = (
+        task(get_style_layout_style)
+        .validate()
+        .set_task_instance_id("layout_style")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(style=trend_style, **(params.get("layout_style") or {}))
+        .call()
+    )
+
     trend_chart = (
         task(draw_time_series_chart)
         .validate()
@@ -1183,8 +1221,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             chart_type=chart_type,
             barmode=barmode,
             palette=palette,
-            plot_style={"texttemplate": "%{y:,.2~f}", "textposition": "auto"},
-            layout_style=None,
+            plot_style=plot_style,
+            layout_style=layout_style,
             widget_id=set_chart_title,
             **(params.get("trend_chart") or {}),
         )
