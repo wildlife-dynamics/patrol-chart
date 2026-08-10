@@ -491,24 +491,7 @@
               "title": "Custom Colors"
             }
           ],
-          "default": [
-            "#FF9600",
-            "#F23B0E",
-            "#A100CB",
-            "#F04564",
-            "#03421A",
-            "#3089FF",
-            "#E26FFF",
-            "#8C1700",
-            "#002960",
-            "#FFD000",
-            "#B62879",
-            "#680078",
-            "#005A56",
-            "#0056C7",
-            "#331878",
-            "#E76826"
-          ],
+          "default": "tab20b",
           "title": "Color Palette",
           "description": "Series colors: a named color map, or your own colors cycled in series order."
         }
