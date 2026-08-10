@@ -185,8 +185,8 @@ month-grouper:
     Tests temporal Group Data grouping: a %B grouper splitting the run into
     one chart per month view (split_groups → merge_widget_views); the
     patrol-day metrics (patrol_days = nunique segment_start_date, and
-    encounters_per_patrol_day with its column-less "Total Events per Patrol
-    Day" label); and multi-series grouped bars on a week axis.
+    encounters_per_patrol_day with its column-less "Events per Patrol Day"
+    rate label); and multi-series grouped bars on a week axis.
   mock_io: true
   params:
     workflow_details:
