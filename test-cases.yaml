@@ -9,7 +9,11 @@
 
 base:
   name: Base
-  description: Mocked IO — primary development case (no credentials needed).
+  description: >-
+    Mocked IO — primary development case (no credentials needed). The trend
+    chart params mirror the FORM-DEFAULT submission (task defaults plus the
+    rjsf-override defaults in spec.yaml): single Patrol Count metric, week
+    interval, Metrics Only, grouped bars, tab20b color map, status "done".
   mock_io: true
   params:
     workflow_details:
@@ -29,33 +33,35 @@ base:
     er_params:
       patrol_types: ["demo_patrol"]
       event_types: []
+      status: ["done"]
     groupers:
       groupers: []
     trend_config:
       metrics:
         - {metric: "patrol_count"}
-        - {metric: "total_distance", unit: "km"}
-        - {metric: "total_events"}
-      time_interval: "month"
+      time_interval: "week"
       mode:
         mode: "metrics"
     trend_style:
       chart:
         chart_type: "bar"
         barmode: "group"
-      palette: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
+      palette: "tab20b"
 
 event-sum-fields:
   name: Per-metric event fields
   description: >-
-    Mocked IO — two event-sum metrics with DIFFERENT per-metric aggregate
-    columns. The canned patrol-events fixture has NO event_details numeric
-    fields (it is pre-flattened), so this case uses the two numeric columns
-    it does have: priority and serial_number. Semantically odd but
-    mechanically complete. For realistic fields (e.g. number_of_snares),
-    add a mock_io_overrides parquet for the unpack-events task later.
+    Mocked IO — event-sum metrics with a per-metric aggregate column. The
+    canned patrol-events fixture has no event_details numeric fields, so the
+    display-names task is overridden (mock_io_overrides) with a fixture that
+    adds `number_of_animals` on the animal event types (Wildlife/Bird
+    Sighting, Injured Animal, Human Wildlife Contact; NA on Fire and
+    Poachers Camp — sums ignore NA). Two metric rows aggregate that column
+    (total + per-distance rate) next to a plain total-distance row.
     trend_style omitted — exercises the style task defaults.
   mock_io: true
+  mock_io_overrides:
+    ecoscope.platform.tasks.io.get_event_type_display_names_from_events: dev/fixtures/event-display-names-number-of-animals.parquet
   params:
     workflow_details:
       name: "Patrol Trend Plot"
@@ -78,42 +84,10 @@ event-sum-fields:
       groupers: []
     trend_config:
       metrics:
-        - {metric: "total_encounter", aggregate_column: "priority"}
-        - {metric: "encounters_per_distance", unit: "km", aggregate_column: "serial_number"}
+        - {metric: "total_encounter", aggregate_column: "number_of_animals"}
+        - {metric: "encounters_per_distance", unit: "km", aggregate_column: "number_of_animals"}
         - {metric: "total_distance", unit: "km"}
       time_interval: "month"
-      mode:
-        mode: "metrics"
-
-week-interval:
-  name: Week interval
-  description: Mocked IO — week bucketing (week-start datetimes) + chronological axis.
-  mock_io: true
-  params:
-    workflow_details:
-      name: "Patrol Trend Plot"
-      description: "Patrol metric trends over time as a bar chart."
-    er_client_name:
-      data_source:
-        name: "er_asia"
-    time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
-      timezone:
-        label: "UTC (UTC+00:00)"
-        tzCode: "UTC"
-        name: "(UTC+00:00) UTC"
-        utc: "+00:00"
-    er_params:
-      patrol_types: ["demo_patrol"]
-      event_types: []
-    groupers:
-      groupers: []
-    trend_config:
-      metrics:
-        - {metric: "patrol_days"}
-        - {metric: "encounters_per_patrol_day"}
-      time_interval: "week"
       mode:
         mode: "metrics"
 
@@ -231,7 +205,10 @@ spatial-mode:
 
 month-grouper:
   name: Month grouper
-  description: Temporal Group Data grouper → one trend chart per month view.
+  description: >-
+    Temporal Group Data grouper → one trend chart per month view. Also
+    covers the patrol-day metrics (nunique of segment_start_date and the
+    per-patrol-day encounter rate) on week bucketing.
   mock_io: true
   params:
     workflow_details:
@@ -256,8 +233,8 @@ month-grouper:
         - temporal_index: "%B"
     trend_config:
       metrics:
-        - {metric: "patrol_count"}
-        - {metric: "total_events"}
+        - {metric: "patrol_days"}
+        - {metric: "encounters_per_patrol_day"}
       time_interval: "week"
       mode:
         mode: "metrics"
@@ -343,9 +320,10 @@ named-palette:
 time-mode:
   name: By Time (compare months)
   description: >-
-    Mocked IO — Break Down By "Time": patrol count per day, one series per
-    month (the canned Jan–Feb 2015 range yields two series), overlaid on a
-    shared day-of-month axis for period-over-period comparison.
+    Mocked IO — Break Down By "Time" as a LINE chart: patrol count per week,
+    one line per month (the canned Jan–Feb 2015 range yields two series),
+    overlaid on the integer week-of-period axis (week 1 = the first 7 days
+    of each month) so the week indices align across months.
   mock_io: true
   params:
     workflow_details:
@@ -370,7 +348,10 @@ time-mode:
     trend_config:
       metrics:
         - {metric: "patrol_count"}
-      time_interval: "day"
+      time_interval: "week"
       mode:
         mode: "time"
         unit: "month"
+    trend_style:
+      chart:
+        chart_type: "line"
