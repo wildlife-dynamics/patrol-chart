@@ -474,9 +474,8 @@
                   },
                   "show_value_labels": {
                     "type": "boolean",
-                    "title": "Show Value Labels",
-                    "default": true,
-                    "description": "Print the value on each bar."
+                    "title": "Show value labels on each bar",
+                    "default": true
                   }
                 }
               }
@@ -529,9 +528,8 @@
                   },
                   "show_markers": {
                     "type": "boolean",
-                    "title": "Show Markers",
-                    "default": true,
-                    "description": "Mark each data point on the line."
+                    "title": "Mark each data point on the line",
+                    "default": true
                   }
                 }
               }
@@ -554,7 +552,7 @@
           ],
           "default": "tab20b",
           "title": "Color Palette",
-          "description": "Series colors: a named color map, or your own colors cycled in series order."
+          "description": "Series colors: a named color map, or your own colors (e.g. #123456) cycled in series order."
         },
         "y_axis_title": {
           "default": "",
