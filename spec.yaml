@@ -1,31 +1,12 @@
 id: patrol_chart
 
 requirements:
-  # DEV ONLY: local editable ecoscope on branch trend-chart-tasks, which
-  # carries the merged #803 transformation tasks (set_encounter_rate_metrics,
-  # concat_dataframes) plus the chart task family (draw_chart with the
-  # figures API, set_chart_config/set_chart_style + splitters). Before
-  # publish, revert to the first released ecoscope-platform that ships them.
-  # Run dev/postcompile-editable.sh after every compile, then test with
-  # --frozen.
-  - name: python
-    version: "3.12.*"
-  - name: ecoscope
-    path: /Users/yunwu/MEP/wt-tasks/ecoscope
-    editable: true
-    extras: ["platform", "mapping", "analysis", "plotting"]
-  - name: lonboard
-    version: "==0.0.8"
+  # >=2.18.4: first release with the chart task family (draw_chart with the
+  # figures API, set_chart_config/set_chart_style + splitters) and the #803
+  # transformation tasks (set_encounter_rate_metrics, concat_dataframes).
+  - name: ecoscope-platform
+    version: ">=2.18.4, <2.19.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
-  - name: numpy
-    version: ">=2,<2.1"
-    channel: conda-forge
-  - name: pyarrow
-    version: ">=20,<24"
-    channel: conda-forge
-  - name: rasterio
-    version: ">=1.3,<1.5"
-    channel: conda-forge
   - name: pydeck
     version: 0.9.2
     channel: conda-forge
